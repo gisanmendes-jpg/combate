@@ -192,20 +192,44 @@ def handle_click(row, col):
             st.session_state.selected_pos = (row, col)
     else:
         # Segundo clique: tenta mover a peça
-        orig_r, orig_c = st.session_state.selected_pos
-        
-        # Se clicou no mesmo lugar, apenas cancela a seleção
-        if (orig_r, orig_c) != (row, col):
-            
-            # CHAMA A VALIDAÇÃO AQUI
-            if is_valid_move(orig_r, orig_c, row, col):
-                # Executa o movimento
-                piece = st.session_state.board[orig_r][orig_c]
-                st.session_state.board[row][col] = piece
-                st.session_state.board[orig_r][orig_c] = "⬜" 
+        if is_valid_move(orig_r, orig_c, row, col):
+                peca_atk = st.session_state.board[orig_r][orig_c]
+                peca_def = st.session_state.board[row][col]
+                
+                # Movimento Normal
+                if peca_def == "⬜":
+                    st.session_state.board[row][col] = peca_atk
+                    st.session_state.board[orig_r][orig_c] = "⬜" 
+                
+                # Resolução de Combate
+                else:
+                    resultado = resolver_combate(peca_atk, peca_def)
+                    
+                    if resultado == "vitoria":
+                        # Atacante ocupa a casa
+                        st.session_state.board[row][col] = peca_atk
+                        st.session_state.board[orig_r][orig_c] = "⬜"
+                        st.toast("Você venceu o combate! Inimigo abatido.", icon="⚔️")
+                        
+                    elif resultado == "derrota":
+                        # Atacante morre, defensor fica no lugar
+                        st.session_state.board[orig_r][orig_c] = "⬜"
+                        st.toast("Sua peça foi destruída!", icon="💥")
+                        
+                    elif resultado == "empate":
+                        # Ambos morrem
+                        st.session_state.board[row][col] = "⬜"
+                        st.session_state.board[orig_r][orig_c] = "⬜"
+                        st.toast("Combate empatado! Ambas peças destruídas.", icon="🤝")
+                        
+                    elif resultado == "vitoria_jogo":
+                        st.session_state.board[row][col] = peca_atk
+                        st.session_state.board[orig_r][orig_c] = "⬜"
+                        st.balloons() # Efeito visual do Streamlit
+                        st.success("🏆 Você capturou o Prisioneiro inimigo! FIM DE JOGO!")
+                        
             else:
-                # Avisa o jogador
-                st.toast("Movimento inválido! Ande apenas uma casa ortogonal.", icon="🚨")
+                st.toast("Movimento inválido!", icon="🚨")
                 
         # Limpa a seleção para o próximo clique
         st.session_state.selected_pos = None
