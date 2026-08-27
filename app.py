@@ -73,12 +73,20 @@ def is_valid_move(orig_r, orig_c, target_r, target_c):
 def handle_click(row, col):
     clicked_item = st.session_state.board[row][col]
     
-    # ... (código do primeiro clique continua igual) ...
-    
+    # Impede clique nos lagos
+    if clicked_item == "🌊":
+        return
+        
+    # Lógica de Origem e Destino
+    if st.session_state.selected_pos is None:
+        # Primeiro clique: seleciona a peça (se não for espaço vazio)
+        if clicked_item != "⬜":
+            st.session_state.selected_pos = (row, col)
     else:
         # Segundo clique: tenta mover a peça
         orig_r, orig_c = st.session_state.selected_pos
         
+        # Se clicou no mesmo lugar, apenas cancela a seleção
         if (orig_r, orig_c) != (row, col):
             
             # CHAMA A VALIDAÇÃO AQUI
@@ -88,10 +96,10 @@ def handle_click(row, col):
                 st.session_state.board[row][col] = piece
                 st.session_state.board[orig_r][orig_c] = "⬜" 
             else:
-                # Opcional: Avisa o jogador usando o st.toast do Streamlit
+                # Avisa o jogador
                 st.toast("Movimento inválido! Ande apenas uma casa ortogonal.", icon="🚨")
                 
-        # Limpa a seleção de qualquer forma para o próximo turno
+        # Limpa a seleção para o próximo clique
         st.session_state.selected_pos = None
 
 
