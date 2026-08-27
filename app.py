@@ -61,6 +61,38 @@ def get_team(cell_content):
     
     return None
 
+def gerar_exercito(cor, emoji_cor):
+    # Dicionário com a Patente e a Quantidade
+    composicao = {
+        "Prisioneiro": 1,
+        "Bomba": 6,
+        "10-Marechal": 1,
+        "9-General": 1,
+        "8-Coronel": 2,
+        "7-Major": 3,
+        "6-Capitao": 4,
+        "5-Tenente": 4,
+        "4-Sargento": 4,
+        "3-Cabo": 5,
+        "2-Soldado": 8,
+        "1-Espiao": 1
+    }
+    
+    exercito = []
+    
+    # Multiplica a patente pela quantidade e adiciona à lista
+    for patente, quantidade in composicao.items():
+        for _ in range(quantidade):
+            # Formata a string para o botão, ex: "🟩 3-Cabo"
+            peca = f"{emoji_cor} {patente}"
+            exercito.append(peca)
+            
+    return exercito
+
+# Gerando as listas de 40 peças para cada time
+pecas_verdes = gerar_exercito("verde", "🟩")
+pecas_vermelhas = gerar_exercito("vermelho", "🟥")
+
 
 def is_valid_move(orig_r, orig_c, target_r, target_c):
     # 1. Distância de Manhattan (Andar apenas 1 casa ortogonal)
