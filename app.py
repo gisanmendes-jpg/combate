@@ -1,48 +1,75 @@
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
-# from seu_modulo_db import db  <- Sua conexão com Supabase, Firebase, SQLite, etc.
 
-st.title("Combate Multiplayer")
+st.set_page_config(layout="centered")
+st.title("⚔️ Combate - Prototipando o Tabuleiro")
 
-# 1. Autenticação simples
-player_email = st.text_input("Digite seu e-mail para entrar na partida:")
-
-if player_email:
-    # 2. Busca o estado global da partida no Banco de Dados
-    # O BD retorna um dicionário com de quem é a vez e a posição das peças
-    game_state = db.get_match("partida_001") 
+# 1. Inicializa o estado do jogo na memória do Streamlit
+if "board" not in st.session_state:
+    # Cria uma matriz 10x10 vazia
+    board = [["⬜" for _ in range(10)] for _ in range(10)]
     
-    is_my_turn = (game_state["current_turn_email"] == player_email)
-
-    # 3. O motor de sincronização
-    if not is_my_turn:
-        # Se NÃO for a sua vez, o Streamlit recarrega o script a cada 3 segundos
-        st_autorefresh(interval=3000, key="waiting_room")
-        st.warning("Aguardando o movimento do adversário...")
-    else:
-        st.success("É a sua vez de jogar!")
-
-    # 4. Renderiza o tabuleiro com o filtro de visão (Fog of War)
-    # Peças inimigas não reveladas viram "Oculto"
-    filtered_board = apply_fog_of_war(game_state["board"], player_email)
+    # Adicionando os Lagos Centrais (Típico do Combate)
+    for r in [4, 5]:
+        for c in [2, 3, 6, 7]:
+            board[r][c] = "🌊"
+            
+    # Adicionando algumas peças de exemplo
+    board[0][0] = "🟩" # Peça Jogador 1
+    board[9][9] = "🟥" # Peça Jogador 2
     
-    # Função hipotética que desenha o grid (usando st.columns ou HTML/CSS)
-    draw_board(filtered_board) 
+    st.session_state.board = board
+    st.session_state.selected_pos = None # Guarda a coordenada do primeiro clique
 
-    # 5. Processamento da jogada
-    if is_my_turn:
-        # Quando o jogador clica para mover uma peça:
-        move = get_player_move() 
+# 2. Função que lida com o clique nos botões
+def handle_click(row, col):
+    clicked_item = st.session_state.board[row][col]
+    
+    # Impede clique nos lagos
+    if clicked_item == "🌊":
+        return
         
-        if move:
-            # Atualiza o dicionário global
-            new_state = process_combat_and_movement(game_state, move)
+    # Lógica de Origem e Destino
+    if st.session_state.selected_pos is None:
+        # Primeiro clique: seleciona a peça (se não for espaço vazio)
+        if clicked_item != "⬜":
+            st.session_state.selected_pos = (row, col)
+    else:
+        # Segundo clique: move a peça para o novo local
+        orig_r, orig_c = st.session_state.selected_pos
+        
+        # Se clicou no mesmo lugar, apenas cancela a seleção
+        if (orig_r, orig_c) != (row, col):
+            # Move a peça
+            piece = st.session_state.board[orig_r][orig_c]
+            st.session_state.board[row][col] = piece
+            st.session_state.board[orig_r][orig_c] = "⬜" # Esvazia origem
             
-            # Passa o turno para o e-mail do adversário
-            new_state["current_turn_email"] = get_opponent_email(player_email)
+        # Limpa a seleção para o próximo turno
+        st.session_state.selected_pos = None
+
+# 3. Desenhando o Grid de Interface
+st.write("Selecione uma peça verde ou vermelha e depois clique em um quadrado branco para mover.")
+
+# Loop para criar as 10 linhas
+for row_idx in range(10):
+    # Cria 10 colunas de tamanhos iguais para a linha atual
+    cols = st.columns(10) 
+    
+    for col_idx in range(10):
+        with cols[col_idx]:
+            # Recupera o que tem nesta casa
+            cell_content = st.session_state.board[row_idx][col_idx]
             
-            # Salva no Banco de Dados
-            db.update_match("partida_001", new_state)
+            # Destaca o botão se ele for a peça selecionada
+            is_selected = st.session_state.selected_pos == (row_idx, col_idx)
+            button_type = "primary" if is_selected else "secondary"
             
-            # Força o recarregamento imediato da própria tela para encerrar o turno
-            st.rerun()
+            # Cria o botão. A chave (key) deve ser única para cada casa!
+            st.button(
+                label=cell_content,
+                key=f"btn_{row_idx}_{col_idx}",
+                on_click=handle_click,
+                args=(row_idx, col_idx), # Passa as coordenadas para a função
+                type=button_type,
+                use_container_width=True # Faz o botão preencher a coluna inteira
+            )
