@@ -1,6 +1,5 @@
 import streamlit as st
 import random
-import time
 
 st.set_page_config(layout="centered")
 st.markdown("""
@@ -19,9 +18,18 @@ st.markdown("""
 
 st.title("⚔️ Combate - Jogador vs Máquina")
 
-if st.button("🔄 Reiniciar Partida"):
-    st.session_state.clear()
-    st.rerun()
+col_btn1, col_btn2 = st.columns([1, 1])
+with col_btn1:
+    if st.button("🔄 Reiniciar Partida"):
+        st.session_state.clear()
+        st.rerun()
+with col_btn2:
+    # Botão manual para a máquina jogar quando você quiser ver o movimento dela
+    if st.button("🤖 Passar a vez para a Máquina"):
+        if st.session_state.get("turno_atual") == "vermelho" and not st.session_state.get("game_over"):
+            jogada_da_maquina()
+            st.session_state.turno_atual = "verde"
+            st.rerun()
 
 # ==========================================
 # 1. FUNÇÕES DO JOGO
@@ -143,7 +151,6 @@ def jogada_da_maquina():
                             break
                             
     if not movimentos_possiveis:
-        st.session_state.aguardando_maquina = False
         return
         
     max_score = max(movimentos_possiveis, key=lambda x: x["score"])["score"]
@@ -175,14 +182,14 @@ def jogada_da_maquina():
             st.session_state.game_over = True
             st.session_state.vencedor = "Vermelho (Máquina)"
             
-    st.session_state.aguardando_maquina = False
+    st.toast("A Máquina executou a jogada dela!", icon="🤖")
 
 # ==========================================
 # 3. CONTROLE DE CLIQUES DO JOGADOR
 # ==========================================
 
 def handle_click(row, col):
-    if st.session_state.get("game_over") or st.session_state.get("aguardando_maquina"): return
+    if st.session_state.get("game_over"): return
         
     clicked_item = st.session_state.board[row][col]
     if clicked_item == "🌊": return
@@ -198,28 +205,22 @@ def handle_click(row, col):
                 peca_atk = st.session_state.board[orig_r][orig_c]
                 peca_def = st.session_state.board[row][col]
                 
-                movimento_valido = False
-                
                 if peca_def == "⬜":
                     st.session_state.board[row][col] = peca_atk
                     st.session_state.board[orig_r][orig_c] = "⬜" 
-                    movimento_valido = True
                 else:
                     resultado = resolver_combate(peca_atk, peca_def)
                     if resultado == "vitoria":
                         st.session_state.board[row][col] = peca_atk
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.toast("Você venceu o combate!", icon="⚔️")
-                        movimento_valido = True
                     elif resultado == "derrota":
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.toast("Sua peça foi destruída!", icon="💥")
-                        movimento_valido = True
                     elif resultado == "empate":
                         st.session_state.board[row][col] = "⬜"
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.toast("Combate empatado!", icon="🤝")
-                        movimento_valido = True
                     elif resultado == "vitoria_jogo":
                         st.session_state.board[row][col] = peca_atk
                         st.session_state.board[orig_r][orig_c] = "⬜"
@@ -229,10 +230,8 @@ def handle_click(row, col):
                         st.session_state.selected_pos = None
                         return
                 
-                # Se o movimento foi válido, sinalizamos que a máquina deve jogar, 
-                # mas deixamos o Streamlit renderizar o seu movimento PRIMEIRO.
-                if movimento_valido and not st.session_state.get("game_over"):
-                    st.session_state.aguardando_maquina = True
+                # Terminou seu turno, agora é a vez da máquina responder
+                st.session_state.turno_atual = "vermelho"
             else:
                 st.toast("Movimento inválido!", icon="🚨")
                 
@@ -264,26 +263,16 @@ if "board" not in st.session_state:
     st.session_state.selected_pos = None
     st.session_state.game_over = False
     st.session_state.vencedor = None
-    st.session_state.aguardando_maquina = False
+    st.session_state.turno_atual = "vermelho"
 
 # ==========================================
-# 5. GATILHO SEPARADO DA MÁQUINA (COM TIMER REAL)
-# ==========================================
-
-if st.session_state.get("aguardando_maquina") and not st.session_state.get("game_over"):
-    st.info("🤖 A Máquina está pensando...", icon="⏳")
-    time.sleep(2)  # Pausa de 2 segundos APÓS o seu movimento já aparecer na tela
-    jogada_da_maquina()
-    st.rerun()
-
-# ==========================================
-# 6. INTERFACE DO TABULEIRO
+# 5. INTERFACE DO TABULEIRO
 # ==========================================
 
 if st.session_state.get("game_over"):
     st.success(f"🎉 JOGO ENCERRADO! A vitória é do exército {st.session_state.vencedor}!", icon="🏆")
 else:
-    st.write("Você é o **Verde**. Clique na sua peça e depois no destino.")
+    st.write("Você é o **Verde**. Faça sua jogada e depois clique em **'Passar a vez para a Máquina'** para ver a resposta dela no seu próprio tempo.")
 
 nevoa_ativada = st.toggle("🌫️ Ocultar patentes inimigas", value=True)
 
