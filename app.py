@@ -14,12 +14,6 @@ st.markdown("""
         }
         .stButton { margin-bottom: -16px !important; }
 
-        /* Estilo para destacar a última jogada da Máquina no Tabuleiro */
-        .destaque-maquina > button > div > button, 
-        div.stButton > button[kind="secondary"] {
-            /* Regra aplicada via classe personalizada no Streamlit se necessário */
-        }
-
         /* Estilo visual das Cartas de Combate */
         .arena-container {
             display: flex;
@@ -211,7 +205,6 @@ def jogada_da_maquina():
     orig_coord = f"({orig_r+1}, {orig_c+1})"
     target_coord = f"({target_r+1}, {target_c+1})"
     
-    # Registra a última posição para destacar visualmente no tabuleiro
     st.session_state.ultima_origem_maquina = (orig_r, orig_c)
     st.session_state.ultimo_destino_maquina = (target_r, target_c)
     
@@ -256,7 +249,6 @@ def handle_click(row, col):
                 orig_coord = f"({orig_r+1}, {orig_c+1})"
                 target_coord = f"({row+1}, {col+1})"
                 
-                # Limpa o destaque da máquina quando o jogador faz um movimento
                 st.session_state.ultima_origem_maquina = None
                 st.session_state.ultimo_destino_maquina = None
                 
@@ -434,7 +426,7 @@ else:
         st.sidebar.info("Ainda não ocorreram combates.")
 
     # ==========================================
-    # 7. INTERFACE DO TABULEIRO (COM DESTAQUE NA JOGADA INIMIGA)
+    # 7. INTERFACE DO TABULEIRO (COM COORDENADAS)
     # ==========================================
 
     if st.session_state.get("game_over"):
@@ -445,13 +437,26 @@ else:
 
     nevoa_ativada = st.toggle("🌫️ Ocultar patentes inimigas", value=True)
 
-    # Coordenada atual da última jogada da máquina para destacar
+    # 1. Linha de Cabeçalho Superior (Números das Colunas: 1 a 10)
+    header_cols = st.columns(11)
+    with header_cols[0]:
+        st.write("") # Canto superior esquerdo vazio para alinhamento
+    for c_idx in range(10):
+        with header_cols[c_idx + 1]:
+            st.markdown(f"<div style='text-align: center; font-weight: bold; color: #4a5568; font-size: 14px; margin-bottom: 5px;'>{c_idx + 1}</div>", unsafe_allow_html=True)
+
+    # 2. Renderização das Linhas do Tabuleiro com a Numeração Lateral (1 a 10)
     destino_maquina = st.session_state.get("ultimo_destino_maquina")
 
     for row_idx in range(10):
-        cols = st.columns(10) 
+        row_cols = st.columns(11)
+        
+        # Número da linha na lateral esquerda alinhado com a altura dos botões (60px)
+        with row_cols[0]:
+            st.markdown(f"<div style='display: flex; align-items: center; justify-content: center; height: 60px; font-weight: bold; color: #4a5568; font-size: 14px;'>{row_idx + 1}</div>", unsafe_allow_html=True)
+            
         for col_idx in range(10):
-            with cols[col_idx]:
+            with row_cols[col_idx + 1]:
                 cell_content = st.session_state.board[row_idx][col_idx]
                 texto_exibicao = cell_content
                 
@@ -459,15 +464,13 @@ else:
                     texto_exibicao = "🟥"
                 
                 is_selected = st.session_state.selected_pos == (row_idx, col_idx)
-                
-                # Se esta casa for exatamente onde a máquina acabou de parar, destacamos o botão como "primary" (vermelho/destacado)
                 is_last_move = (destino_maquina == (row_idx, col_idx))
                 
                 if is_selected:
                     btn_type = "primary"
                 elif is_last_move:
-                    btn_type = "primary"  # Destaca visualmente a peça que acabou de andar
-                    texto_exibicao = f"📍 {texto_exibicao}"  # Adiciona um marcador indicador na casa
+                    btn_type = "primary"
+                    texto_exibicao = f"📍 {texto_exibicao}"
                 else:
                     btn_type = "secondary"
                 
