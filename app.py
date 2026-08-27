@@ -67,13 +67,39 @@ def is_valid_move(orig_r, orig_c, target_r, target_c):
     if not (0 <= target_r < 10 and 0 <= target_c < 10): return False
         
     orig_cell = st.session_state.board[orig_r][orig_c]
+    
+    # Peças imóveis
     if "Bomba" in orig_cell or "Prisioneiro" in orig_cell: return False
         
-    if abs(orig_r - target_r) + abs(orig_c - target_c) != 1: return False
+    # --- REGRA ESPECIAL DO SOLDADO ---
+    if "2-Soldado" in orig_cell:
+        # O Soldado deve andar apenas em linha reta (não pode ser diagonal)
+        if orig_r != target_r and orig_c != target_c:
+            return False
+            
+        # Determina a direção do passo (+1, -1 ou 0)
+        step_r = 1 if target_r > orig_r else (-1 if target_r < orig_r else 0)
+        step_c = 1 if target_c > orig_c else (-1 if target_c < orig_c else 0)
         
+        # Percorre o caminho verificando se há obstáculos ANTES do destino final
+        curr_r, curr_c = orig_r + step_r, orig_c + step_c
+        while (curr_r, curr_c) != (target_r, target_c):
+            # Se bater em qualquer coisa no caminho (água, amigos ou inimigos), trava
+            if st.session_state.board[curr_r][curr_c] != "⬜":
+                return False
+            curr_r += step_r
+            curr_c += step_c
+            
+    # --- REGRA PADRÃO PARA OUTRAS PEÇAS ---
+    else:
+        # Demais peças andam apenas 1 casa
+        if abs(orig_r - target_r) + abs(orig_c - target_c) != 1: 
+            return False
+            
+    # Checagens finais no destino (Agua e Fogo Amigo)
     target_cell = st.session_state.board[target_r][target_c]
+    
     if target_cell == "🌊": return False
-        
     if get_team(orig_cell) == get_team(target_cell): return False
         
     return True
