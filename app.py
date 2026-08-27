@@ -111,6 +111,40 @@ def gerar_exercito(cor, emoji_cor):
 pecas_verdes = gerar_exercito("verde", "🟩")
 pecas_vermelhas = gerar_exercito("vermelho", "🟥")
 
+def resolver_combate(atacante, defensor):
+    # Separa o emoji do nome da peça. Ex: "🟩 3-Cabo" vira "3-Cabo"
+    nome_atk = atacante.split(" ", 1)[1]
+    nome_def = defensor.split(" ", 1)[1]
+    
+    # 1. Condição de Vitória do Jogo
+    if nome_def == "Prisioneiro":
+        return "vitoria_jogo"
+        
+    # 2. Regra da Bomba
+    if nome_def == "Bomba":
+        if "3-Cabo" in nome_atk:
+            return "vitoria" # O Cabo desarma e avança
+        else:
+            return "derrota" # Qualquer outro explode e morre
+            
+    # 3. Regra do Empate (Patentes iguais se destroem)
+    if nome_atk == nome_def:
+        return "empate"
+        
+    # 4. Regra Especial do Espião vs Marechal
+    if "1-Espiao" in nome_atk and "10-Marechal" in nome_def:
+        return "vitoria"
+        
+    # 5. Combate Padrão (Maior número vence)
+    # Extrai só o número da string. Ex: "10-Marechal" -> "10" -> int(10)
+    forca_atk = int(nome_atk.split("-")[0])
+    forca_def = int(nome_def.split("-")[0])
+    
+    if forca_atk > forca_def:
+        return "vitoria"
+    else:
+        return "derrota"
+
 
 def is_valid_move(orig_r, orig_c, target_r, target_c):
     orig_cell = st.session_state.board[orig_r][orig_c]
