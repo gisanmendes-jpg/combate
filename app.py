@@ -135,19 +135,6 @@ def is_valid_move(orig_r, orig_c, target_r, target_c):
         
     return True
 
-def obter_caminho(orig_r, orig_c, target_r, target_c):
-    caminho = [(orig_r, orig_c)]
-    step_r = 1 if target_r > orig_r else (-1 if target_r < orig_r else 0)
-    step_c = 1 if target_c > orig_c else (-1 if target_c < orig_c else 0)
-    
-    curr_r, curr_c = orig_r + step_r, orig_c + step_c
-    while (curr_r, curr_c) != (target_r, target_c):
-        caminho.append((curr_r, curr_c))
-        curr_r += step_r
-        curr_c += step_c
-    caminho.append((target_r, target_c))
-    return caminho
-
 def avaliar_movimento(orig_r, orig_c, target_r, target_c):
     score = 0
     peca_atk = st.session_state.board[orig_r][orig_c]
@@ -168,7 +155,7 @@ def avaliar_movimento(orig_r, orig_c, target_r, target_c):
     return score
 
 # ==========================================
-# 2. MOTOR DA INTELIGÊNCIA ARTIFICIAL (COM CAMINHADA LENTA)
+# 2. MOTOR DA INTELIGÊNCIA ARTIFICIAL
 # ==========================================
 
 def jogada_da_maquina():
@@ -203,7 +190,7 @@ def jogada_da_maquina():
                             break
                             
     if not movimentos_possiveis:
-        st.toast("A Máquina não encontrou movimentos válidos.", icon="⚠️")
+        st.session_state.ultimo_movimento_maquina = "A Máquina tentou se mover, mas está sem jogadas válidas."
         return
         
     max_score = max(movimentos_possiveis, key=lambda x: x["score"])["score"]
@@ -213,19 +200,36 @@ def jogada_da_maquina():
     orig_r, orig_c = jogada_escolhida["orig"]
     target_r, target_c = jogada_escolhida["target"]
     
-    # Prepara a animação de caminhada no tabuleiro
-    path = obter_caminho(orig_r, orig_c, target_r, target_c)
-    st.session_state.anim_path = path
-    st.session_state.anim_peca = st.session_state.board[orig_r][orig_c]
-    st.session_state.anim_index = 0
-    st.session_state.em_animacao = True
+    peca_atk = st.session_state.board[orig_r][orig_c]
+    peca_def = st.session_state.board[target_r][target_c]
+    
+    # Mensagem descritiva clara para você não ficar perdida
+    orig_coord = f"({orig_r+1}, {orig_c+1})"
+    target_coord = f"({target_r+1}, {target_c+1})"
+    
+    if peca_def == "⬜":
+        st.session_state.board[target_r][target_c] = peca_atk
+        st.session_state.board[orig_r][orig_c] = "⬜"
+        st.session_state.ultimo_movimento_maquina = f"🤖 A Máquina avançou uma tropa da posição {orig_coord} para {target_coord}."
+    else:
+        resultado = resolver_combate(peca_atk, peca_def)
+        st.session_state.dados_combate = {
+            "orig": (orig_r, orig_c),
+            "target": (target_r, target_c),
+            "atacante": peca_atk,
+            "defensor": peca_def,
+            "resultado": resultado,
+            "quem_iniciou": "maquina"
+        }
+        st.session_state.fase_combate = True
+        st.session_state.ultimo_movimento_maquina = f"⚔️ A Máquina atacou sua peça em {target_coord}!"
 
 # ==========================================
 # 3. CONTROLE DE CLIQUES DO JOGADOR
 # ==========================================
 
 def handle_click(row, col):
-    if st.session_state.get("game_over") or st.session_state.get("em_animacao"): return
+    if st.session_state.get("game_over") or st.session_state.get("fase_combate"): return
         
     clicked_item = st.session_state.board[row][col]
     if clicked_item == "🌊": return
@@ -241,9 +245,13 @@ def handle_click(row, col):
                 peca_atk = st.session_state.board[orig_r][orig_c]
                 peca_def = st.session_state.board[row][col]
                 
+                orig_coord = f"({orig_r+1}, {orig_c+1})"
+                target_coord = f"({row+1}, {col+1})"
+                
                 if peca_def == "⬜":
                     st.session_state.board[row][col] = peca_atk
                     st.session_state.board[orig_r][orig_c] = "⬜" 
+                    st.session_state.ultimo_movimento_maquina = f"Sua última jogada: moveu de {orig_coord} para {target_coord}."
                 else:
                     resultado = resolver_combate(peca_atk, peca_def)
                     st.session_state.dados_combate = {
@@ -286,63 +294,13 @@ if "board" not in st.session_state:
     st.session_state.selected_pos = None
     st.session_state.game_over = False
     st.session_state.vencedor = None
-    st.session_state.turno_atual = "vermelho"
     st.session_state.historico_combates = []
     st.session_state.fase_combate = False
     st.session_state.dados_combate = None
-    st.session_state.em_animacao = False
+    st.session_state.ultimo_movimento_maquina = "Partida iniciada. Faça sua jogada!"
 
 # ==========================================
-# 5. EXECUÇÃO DA ANIMAÇÃO DE CAMINHADA DA MÁQUINA
-# ==========================================
-
-if st.session_state.get("em_animacao"):
-    path = st.session_state.anim_path
-    idx = st.session_state.anim_index
-    peca = st.session_state.anim_peca
-    
-    if idx < len(path):
-        r, c = path[idx]
-        
-        # Remove da origem no primeiro passo
-        if idx == 0:
-            st.session_state.board[path[0][0]][path[0][1]] = "⬜"
-        
-        # Se for o último passo
-        if idx == len(path) - 1:
-            target_cell = st.session_state.board[r][c]
-            if target_cell != "⬜":
-                # Bateu em uma peça verde! Para a animação e abre a Arena de Cartas
-                st.session_state.em_animacao = False
-                resultado = resolver_combate(peca, target_cell)
-                st.session_state.dados_combate = {
-                    "orig": path[0],
-                    "target": (r, c),
-                    "atacante": peca,
-                    "defensor": target_cell,
-                    "resultado": resultado,
-                    "quem_iniciou": "maquina"
-                }
-                st.session_state.fase_combate = True
-                st.rerun()
-            else:
-                # Casa vazia, termina a caminhada aqui
-                st.session_state.board[r][c] = peca
-                st.session_state.em_animacao = False
-                st.rerun()
-        else:
-            # Passo intermediário (casa vazia)
-            st.session_state.board[r][c] = peca
-            if idx > 0:
-                prev_r, prev_c = path[idx - 1]
-                st.session_state.board[prev_r][prev_c] = "⬜"
-            
-            st.session_state.anim_index += 1
-            time.sleep(0.4) # Velocidade de passo a passo no tabuleiro
-            st.rerun()
-
-# ==========================================
-# 6. TELA DE COMBATE CINEMATOGRÁFICA (CARTAS)
+# 5. TELA DE COMBATE CINEMATOGRÁFICA (CARTAS)
 # ==========================================
 
 if st.session_state.get("fase_combate"):
@@ -423,7 +381,7 @@ if st.session_state.get("fase_combate"):
             st.rerun()
 
 # ==========================================
-# 7. BARRA LATERAL (SIDEBAR) - PAINEL DE CONTROLE
+# 6. BARRA LATERAL (SIDEBAR) - PAINEL DE CONTROLE
 # ==========================================
 
 else:
@@ -434,7 +392,7 @@ else:
         st.rerun()
 
     if st.sidebar.button("🤖 Passar a vez para a Máquina"):
-        if not st.session_state.get("game_over") and not st.session_state.get("em_animacao"):
+        if not st.session_state.get("game_over"):
             jogada_da_maquina()
             st.rerun()
 
@@ -462,15 +420,15 @@ else:
         st.sidebar.info("Ainda não ocorreram combates.")
 
     # ==========================================
-    # 8. INTERFACE DO TABULEIRO
+    # 7. INTERFACE DO TABULEIRO
     # ==========================================
 
     if st.session_state.get("game_over"):
         st.success(f"🎉 JOGO ENCERRADO! A vitória é do exército {st.session_state.vencedor}!", icon="🏆")
-    elif st.session_state.get("em_animacao"):
-        st.info("🤖 A Máquina está se movimentando pelo tabuleiro...", icon="🚶‍♂️")
     else:
         st.write("Você é o **Verde**. Faça sua jogada e depois clique em **'Passar a vez para a Máquina'** na barra lateral.")
+        # Caixa de texto informativa exibindo o que a máquina acabou de fazer
+        st.info(st.session_state.get("ultimo_movimento_maquina", "Aguardando primeira jogada..."), icon="📢")
 
     nevoa_ativada = st.toggle("🌫️ Ocultar patentes inimigas", value=True)
 
