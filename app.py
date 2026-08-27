@@ -206,8 +206,16 @@ if "board" not in st.session_state:
 # 3. RENDERIZAÇÃO DA INTERFACE
 # ==========================================
 
+# ==========================================
+# 3. RENDERIZAÇÃO DA INTERFACE
+# ==========================================
+
 st.write("Selecione uma peça verde ou vermelha e depois clique em um quadrado branco para mover.")
 
+# Adiciona um interruptor para ativar/desativar a visão do inimigo
+nevoa_ativada = st.toggle("🌫️ Ativar Névoa de Guerra (Ocultar inimigos)", value=True)
+
+# Loop para criar as 10 linhas
 for row_idx in range(10):
     cols = st.columns(10) 
     
@@ -215,11 +223,16 @@ for row_idx in range(10):
         with cols[col_idx]:
             cell_content = st.session_state.board[row_idx][col_idx]
             
+            # Lógica do Fog of War: Oculta o texto se for peça vermelha e a névoa estiver ligada
+            texto_exibicao = cell_content
+            if nevoa_ativada and "🟥" in cell_content:
+                texto_exibicao = "🟥" # Mostra apenas a cor, sem a patente
+            
             is_selected = st.session_state.selected_pos == (row_idx, col_idx)
             button_type = "primary" if is_selected else "secondary"
             
             st.button(
-                label=cell_content,
+                label=texto_exibicao, # Passa a usar o texto filtrado
                 key=f"btn_{row_idx}_{col_idx}",
                 on_click=handle_click,
                 args=(row_idx, col_idx), 
