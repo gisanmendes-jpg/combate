@@ -193,9 +193,6 @@ def handle_click(row, col):
         orig_r, orig_c = st.session_state.selected_pos
         
         if (orig_r, orig_c) != (row, col):
-            if is_valid_move(orig_r, orig_c, target_r, target_c := row): # Mantém a assinatura correta do target
-                pass # Tratado abaixo
-            
             if is_valid_move(orig_r, orig_c, row, col):
                 peca_atk = st.session_state.board[orig_r][orig_c]
                 peca_def = st.session_state.board[row][col]
@@ -300,7 +297,7 @@ st.sidebar.divider()
 
 st.sidebar.subheader("📜 Diário de Guerra")
 if st.session_state.get("historico_combates"):
-    for evento in st.session_state.historico_combates[:6]: # Mostra os últimos 6 eventos
+    for evento in st.session_state.historico_combates[:6]:
         st.sidebar.markdown(f"- {evento}")
 else:
     st.sidebar.info("Ainda não ocorreram combates.")
