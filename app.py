@@ -18,19 +18,6 @@ st.markdown("""
 
 st.title("⚔️ Combate - Jogador vs Máquina")
 
-col_btn1, col_btn2 = st.columns([1, 1])
-with col_btn1:
-    if st.button("🔄 Reiniciar Partida"):
-        st.session_state.clear()
-        st.rerun()
-with col_btn2:
-    # Botão manual para a máquina jogar quando você quiser ver o movimento dela
-    if st.button("🤖 Passar a vez para a Máquina"):
-        if st.session_state.get("turno_atual") == "vermelho" and not st.session_state.get("game_over"):
-            jogada_da_maquina()
-            st.session_state.turno_atual = "verde"
-            st.rerun()
-
 # ==========================================
 # 1. FUNÇÕES DO JOGO
 # ==========================================
@@ -151,6 +138,7 @@ def jogada_da_maquina():
                             break
                             
     if not movimentos_possiveis:
+        st.toast("A Máquina não encontrou movimentos válidos.", icon="⚠️")
         return
         
     max_score = max(movimentos_possiveis, key=lambda x: x["score"])["score"]
@@ -230,7 +218,6 @@ def handle_click(row, col):
                         st.session_state.selected_pos = None
                         return
                 
-                # Terminou seu turno, agora é a vez da máquina responder
                 st.session_state.turno_atual = "vermelho"
             else:
                 st.toast("Movimento inválido!", icon="🚨")
@@ -266,13 +253,24 @@ if "board" not in st.session_state:
     st.session_state.turno_atual = "vermelho"
 
 # ==========================================
-# 5. INTERFACE DO TABULEIRO
+# 5. BOTÕES DE CONTROLE E INTERFACE
 # ==========================================
+
+col_btn1, col_btn2 = st.columns([1, 1])
+with col_btn1:
+    if st.button("🔄 Reiniciar Partida"):
+        st.session_state.clear()
+        st.rerun()
+with col_btn2:
+    if st.button("🤖 Passar a vez para a Máquina"):
+        if not st.session_state.get("game_over"):
+            jogada_da_maquina()
+            st.rerun()
 
 if st.session_state.get("game_over"):
     st.success(f"🎉 JOGO ENCERRADO! A vitória é do exército {st.session_state.vencedor}!", icon="🏆")
 else:
-    st.write("Você é o **Verde**. Faça sua jogada e depois clique em **'Passar a vez para a Máquina'** para ver a resposta dela no seu próprio tempo.")
+    st.write("Você é o **Verde**. Faça sua jogada e depois clique em **'Passar a vez para a Máquina'**.")
 
 nevoa_ativada = st.toggle("🌫️ Ocultar patentes inimigas", value=True)
 
