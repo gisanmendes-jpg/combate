@@ -104,64 +104,109 @@ def is_valid_move(orig_r, orig_c, target_r, target_c):
         
     return True
 
+
+def avaliar_movimento(orig_r, orig_c, target_r, target_c):
+    score = 0
+    peca_atk = st.session_state.board[orig_r][orig_c]
+    peca_def = st.session_state.board[target_r][target_c]
+    
+    # 1. Peso de Avanço: Recompensa por marchar para o norte (linha 0)
+    # Como o vermelho começa embaixo (linhas 6 a 9), ir para uma linha menor é avanço.
+    if target_r < orig_r:
+        score += 10 
+        
+    # 2. Peso de Agressividade: Recompensa altíssima por atacar uma peça inimiga
+    if peca_def != "⬜":
+        score += 50
+        
+        # Faro assassino: Se a máquina "farejar" o prisioneiro (um pequeno cheat da IA), foco total
+        if "Prisioneiro" in peca_def:
+            score += 1000
+            
+    # 3. Peso Tático: Incentivo para o Soldado explorar seu super movimento
+    if "2-Soldado" in peca_atk:
+        distancia = abs(orig_r - target_r) + abs(orig_c - target_c)
+        if distancia > 1:
+            score += (distancia * 5) # Quanto mais longe ele for, melhor a nota
+            
+    return score
+    
 # ==========================================
 # 2. MOTOR DA INTELIGÊNCIA ARTIFICIAL
 # ==========================================
 
 def jogada_da_maquina():
-    # 1. Encontra todas as peças vermelhas móveis
-    pecas_moveis = []
+    movimentos_possiveis = []
+    
+    # 1. Varredura Tática: Analisa todas as peças vermelhas no tabuleiro
     for r in range(10):
         for c in range(10):
             cell = st.session_state.board[r][c]
+            
             if "🟥" in cell and "Bomba" not in cell and "Prisioneiro" not in cell:
-                pecas_moveis.append((r, c))
-    
-    # Embaralha para o bot não ser previsível
-    random.shuffle(pecas_moveis)
-    
-    movimento_feito = False
-    
-    # 2. Tenta mover uma peça válida
-    for (orig_r, orig_c) in pecas_moveis:
-        # Tenta as 4 direções ortogonais aleatoriamente
-        direcoes = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-        random.shuffle(direcoes)
+                
+                # O Soldado pode tentar andar até 9 casas; as outras peças, apenas 1
+                alcance = 9 if "2-Soldado" in cell else 1
+                direcoes = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+                
+                for dr, dc in direcoes:
+                    for passo in range(1, alcance + 1):
+                        target_r = r + (dr * passo)
+                        target_c = c + (dc * passo)
+                        
+                        # Usa o motor físico do jogo para validar
+                        if is_valid_move(r, c, target_r, target_c):
+                            score = avaliar_movimento(r, c, target_r, target_c)
+                            movimentos_possiveis.append({
+                                "orig": (r, c),
+                                "target": (target_r, target_c),
+                                "score": score
+                            })
+                        else:
+                            # Se esbarrou em obstáculo, o soldado para de olhar nessa direção
+                            break
+                            
+    # Se a máquina ficar travada sem movimentos, passa a vez
+    if not movimentos_possiveis:
+        st.session_state.turno_atual = "verde"
+        return
         
-        for dr, dc in direcoes:
-            target_r, target_c = orig_r + dr, orig_c + dc
+    # 2. Tomada de Decisão (Otimização)
+    # Encontra a nota máxima entre todos os cenários projetados
+    max_score = max(movimentos_possiveis, key=lambda x: x["score"])["score"]
+    
+    # Filtra as jogadas que empataram na nota máxima
+    melhores_jogadas = [m for m in movimentos_possiveis if m["score"] == max_score]
+    
+    # Sorteia uma das melhores opções para manter a imprevisibilidade
+    jogada_escolhida = random.choice(melhores_jogadas)
+    
+    orig_r, orig_c = jogada_escolhida["orig"]
+    target_r, target_c = jogada_escolhida["target"]
+    
+    # 3. Execução do Movimento
+    peca_atk = st.session_state.board[orig_r][orig_c]
+    peca_def = st.session_state.board[target_r][target_c]
+    
+    if peca_def == "⬜":
+        st.session_state.board[target_r][target_c] = peca_atk
+        st.session_state.board[orig_r][orig_c] = "⬜"
+    else:
+        resultado = resolver_combate(peca_atk, peca_def)
+        if resultado == "vitoria":
+            st.session_state.board[target_r][target_c] = peca_atk
+            st.session_state.board[orig_r][orig_c] = "⬜"
+        elif resultado == "derrota":
+            st.session_state.board[orig_r][orig_c] = "⬜"
+        elif resultado == "empate":
+            st.session_state.board[target_r][target_c] = "⬜"
+            st.session_state.board[orig_r][orig_c] = "⬜"
+        elif resultado == "vitoria_jogo":
+            st.session_state.board[target_r][target_c] = peca_atk
+            st.session_state.board[orig_r][orig_c] = "⬜"
+            st.error("💀 A Máquina capturou seu Prisioneiro! Você perdeu.")
             
-            if is_valid_move(orig_r, orig_c, target_r, target_c):
-                peca_atk = st.session_state.board[orig_r][orig_c]
-                peca_def = st.session_state.board[target_r][target_c]
-                
-                # Executa o movimento
-                if peca_def == "⬜":
-                    st.session_state.board[target_r][target_c] = peca_atk
-                    st.session_state.board[orig_r][orig_c] = "⬜"
-                else:
-                    resultado = resolver_combate(peca_atk, peca_def)
-                    if resultado == "vitoria":
-                        st.session_state.board[target_r][target_c] = peca_atk
-                        st.session_state.board[orig_r][orig_c] = "⬜"
-                    elif resultado == "derrota":
-                        st.session_state.board[orig_r][orig_c] = "⬜"
-                    elif resultado == "empate":
-                        st.session_state.board[target_r][target_c] = "⬜"
-                        st.session_state.board[orig_r][orig_c] = "⬜"
-                    elif resultado == "vitoria_jogo":
-                        st.session_state.board[target_r][target_c] = peca_atk
-                        st.session_state.board[orig_r][orig_c] = "⬜"
-                        st.error("💀 A Máquina capturou seu Prisioneiro! Você perdeu.")
-                
-                st.toast("A Máquina fez a sua jogada!", icon="🤖")
-                movimento_feito = True
-                break # Sai do loop de direções
-                
-        if movimento_feito:
-            break # Sai do loop de peças
-            
-    # Devolve o turno para o jogador
+    st.toast("A Máquina executou uma jogada tática!", icon="🤖")
     st.session_state.turno_atual = "verde"
 
 # ==========================================
