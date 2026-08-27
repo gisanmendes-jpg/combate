@@ -192,16 +192,22 @@ def handle_click(row, col):
             st.session_state.selected_pos = (row, col)
     else:
         # Segundo clique: tenta mover a peça
-        if is_valid_move(orig_r, orig_c, row, col):
+        orig_r, orig_c = st.session_state.selected_pos
+        
+        # Se clicou no mesmo lugar, apenas cancela a seleção
+        if (orig_r, orig_c) != (row, col):
+            
+            # CHAMA A VALIDAÇÃO AQUI
+            if is_valid_move(orig_r, orig_c, row, col):
                 peca_atk = st.session_state.board[orig_r][orig_c]
                 peca_def = st.session_state.board[row][col]
                 
-                # Movimento Normal
+                # Movimento Normal (Destino Vazio)
                 if peca_def == "⬜":
                     st.session_state.board[row][col] = peca_atk
                     st.session_state.board[orig_r][orig_c] = "⬜" 
                 
-                # Resolução de Combate
+                # Resolução de Combate (Destino Ocupado)
                 else:
                     resultado = resolver_combate(peca_atk, peca_def)
                     
@@ -225,10 +231,11 @@ def handle_click(row, col):
                     elif resultado == "vitoria_jogo":
                         st.session_state.board[row][col] = peca_atk
                         st.session_state.board[orig_r][orig_c] = "⬜"
-                        st.balloons() # Efeito visual do Streamlit
+                        st.balloons() 
                         st.success("🏆 Você capturou o Prisioneiro inimigo! FIM DE JOGO!")
                         
             else:
+                # Movimento inválido (distância, água ou fogo amigo)
                 st.toast("Movimento inválido!", icon="🚨")
                 
         # Limpa a seleção para o próximo clique
