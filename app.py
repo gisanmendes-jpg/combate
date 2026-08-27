@@ -174,8 +174,6 @@ def jogada_da_maquina():
             st.session_state.board[orig_r][orig_c] = "⬜"
             st.session_state.game_over = True
             st.session_state.vencedor = "Vermelho (Máquina)"
-            st.session_state.aguardando_maquina = False
-            return
             
     st.session_state.aguardando_maquina = False
 
@@ -231,7 +229,8 @@ def handle_click(row, col):
                         st.session_state.selected_pos = None
                         return
                 
-                # Ativa a bandeira de espera para a IA rodar no fluxo principal
+                # Se o movimento foi válido, sinalizamos que a máquina deve jogar, 
+                # mas deixamos o Streamlit renderizar o seu movimento PRIMEIRO.
                 if movimento_valido and not st.session_state.get("game_over"):
                     st.session_state.aguardando_maquina = True
             else:
@@ -268,12 +267,12 @@ if "board" not in st.session_state:
     st.session_state.aguardando_maquina = False
 
 # ==========================================
-# 5. GATILHO DO TIMER DA MÁQUINA
+# 5. GATILHO SEPARADO DA MÁQUINA (COM TIMER REAL)
 # ==========================================
 
 if st.session_state.get("aguardando_maquina") and not st.session_state.get("game_over"):
     st.info("🤖 A Máquina está pensando...", icon="⏳")
-    time.sleep(2)  # Pausa de exatamente 2 segundos para você acompanhar
+    time.sleep(2)  # Pausa de 2 segundos APÓS o seu movimento já aparecer na tela
     jogada_da_maquina()
     st.rerun()
 
