@@ -3,20 +3,30 @@ import streamlit as st
 st.set_page_config(layout="centered")
 st.markdown("""
     <style>
-        /* Remove o espaço entre as colunas horizontais */
+        /* 1. Zera o gap (espaço horizontal) entre as colunas nativas do Streamlit */
+        [data-testid="stHorizontalBlock"] {
+            gap: 0rem !important;
+        }
+        
+        /* 2. Zera o padding interno de cada coluna */
         [data-testid="column"] {
             padding: 0 !important;
-            gap: 0 !important;
         }
-        /* Remove o espaço vertical entre os botões */
-        div.row-widget.stButton {
-            margin-bottom: -15px !important;
-        }
-        /* Deixa os botões quadrados e maiores */
-        button {
-            height: 50px !important;
-            font-size: 20px !important;
+
+        /* 3. Força o botão a ser perfeitamente quadrado e sem bordas arredondadas */
+        .stButton > button {
+            width: 100% !important;
+            height: 60px !important; /* Você pode aumentar aqui se quiser casas maiores */
             border-radius: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+            border: 1px solid #d3d3d3 !important; /* Cria uma linha sutil imitando o quadriculado */
+            font-size: 24px !important; /* Aumenta o tamanho dos emojis */
+        }
+
+        /* 4. Truque para colar as linhas verticais (puxa o botão de baixo para cima) */
+        .stButton {
+            margin-bottom: -16px !important; 
         }
     </style>
 """, unsafe_allow_html=True)
@@ -92,3 +102,4 @@ for row_idx in range(10):
                 type=button_type,
                 use_container_width=True # Faz o botão preencher a coluna inteira
             )
+           
