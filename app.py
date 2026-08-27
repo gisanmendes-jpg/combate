@@ -1,6 +1,25 @@
 import streamlit as st
 
 st.set_page_config(layout="centered")
+st.markdown("""
+    <style>
+        /* Remove o espaço entre as colunas horizontais */
+        [data-testid="column"] {
+            padding: 0 !important;
+            gap: 0 !important;
+        }
+        /* Remove o espaço vertical entre os botões */
+        div.row-widget.stButton {
+            margin-bottom: -15px !important;
+        }
+        /* Deixa os botões quadrados e maiores */
+        button {
+            height: 50px !important;
+            font-size: 20px !important;
+            border-radius: 0px !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
 st.title("⚔️ Combate - Prototipando o Tabuleiro")
 
 # 1. Inicializa o estado do jogo na memória do Streamlit
