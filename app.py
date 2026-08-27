@@ -23,7 +23,7 @@ if st.button("🔄 Reiniciar Partida"):
     st.rerun()
 
 # ==========================================
-# 1. ÁREA DE FUNÇÕES BASE
+# 1. FUNÇÕES DO JOGO
 # ==========================================
 
 def get_team(cell_content):
@@ -92,17 +92,20 @@ def avaliar_movimento(orig_r, orig_c, target_r, target_c):
     peca_atk = st.session_state.board[orig_r][orig_c]
     peca_def = st.session_state.board[target_r][target_c]
     
+    # Prioriza andar para frente (em direção ao exército verde)
     if target_r < orig_r: score += 10 
         
-    if peca_def != "⬜":
+    # Atacar peças do jogador
+    if peca_def != "⬜" and "🟩" in peca_def:
         score += 50
         if "Prisioneiro" in peca_def:
             score += 1000
             
+    # Movimentação longa de soldados
     if "2-Soldado" in peca_atk:
         distancia = abs(orig_r - target_r) + abs(orig_c - target_c)
         if distancia > 1:
-            score += (distancia * 5)
+            score += (distancia * 3)
             
     return score
 
@@ -111,7 +114,6 @@ def avaliar_movimento(orig_r, orig_c, target_r, target_c):
 # ==========================================
 
 def jogada_da_maquina():
-    # Trava a IA se o jogo tiver acabado
     if st.session_state.get("game_over"): return
     
     movimentos_possiveis = []
@@ -121,24 +123,29 @@ def jogada_da_maquina():
             cell = st.session_state.board[r][c]
             
             if "🟥" in cell and "Bomba" not in cell and "Prisioneiro" not in cell:
-                alcance = 9 if "2-Soldado" in cell else 1
                 direcoes = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+                alcance = 9 if "2-Soldado" in cell else 1
                 
                 for dr, dc in direcoes:
                     for passo in range(1, alcance + 1):
                         target_r = r + (dr * passo)
                         target_c = c + (dc * passo)
                         
+                        if not (0 <= target_r < 10 and 0 <= target_c < 10):
+                            break
+                            
                         if is_valid_move(r, c, target_r, target_c):
                             score = avaliar_movimento(r, c, target_r, target_c)
                             movimentos_possiveis.append({
                                 "orig": (r, c), "target": (target_r, target_c), "score": score
                             })
+                            # Se for combate, o soldado para naquela casa
+                            if st.session_state.board[target_r][target_c] != "⬜":
+                                break
                         else:
                             break
                             
     if not movimentos_possiveis:
-        st.session_state.turno_atual = "verde"
         return
         
     max_score = max(movimentos_possiveis, key=lambda x: x["score"])["score"]
@@ -167,28 +174,23 @@ def jogada_da_maquina():
         elif resultado == "vitoria_jogo":
             st.session_state.board[target_r][target_c] = peca_atk
             st.session_state.board[orig_r][orig_c] = "⬜"
-            
-            # ACIONA A TRAVA DE FIM DE JOGO
             st.session_state.game_over = True
             st.session_state.vencedor = "Vermelho (Máquina)"
-            return # Encerra a função e não devolve o turno
+            return
             
-    st.toast("A Máquina executou uma jogada tática!", icon="🤖")
-    st.session_state.turno_atual = "verde"
+    st.toast("A Máquina fez a sua jogada!", icon="🤖")
 
 # ==========================================
-# 3. LÓGICA DE CLIQUE DO JOGADOR
+# 3. CONTROLE DE CLIQUES DO JOGADOR
 # ==========================================
 
 def handle_click(row, col):
-    # Trava o jogador se o jogo tiver acabado
     if st.session_state.get("game_over"): return
-    
-    if st.session_state.turno_atual != "verde": return
         
     clicked_item = st.session_state.board[row][col]
     if clicked_item == "🌊": return
         
+    # Primeiro clique: seleciona peça verde
     if st.session_state.selected_pos is None:
         if "🟩" in clicked_item:
             st.session_state.selected_pos = (row, col)
@@ -200,34 +202,40 @@ def handle_click(row, col):
                 peca_atk = st.session_state.board[orig_r][orig_c]
                 peca_def = st.session_state.board[row][col]
                 
+                movimento_valido = False
+                
                 if peca_def == "⬜":
                     st.session_state.board[row][col] = peca_atk
                     st.session_state.board[orig_r][orig_c] = "⬜" 
+                    movimento_valido = True
                 else:
                     resultado = resolver_combate(peca_atk, peca_def)
                     if resultado == "vitoria":
                         st.session_state.board[row][col] = peca_atk
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.toast("Você venceu o combate!", icon="⚔️")
+                        movimento_valido = True
                     elif resultado == "derrota":
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.toast("Sua peça foi destruída!", icon="💥")
+                        movimento_valido = True
                     elif resultado == "empate":
                         st.session_state.board[row][col] = "⬜"
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.toast("Combate empatado!", icon="🤝")
+                        movimento_valido = True
                     elif resultado == "vitoria_jogo":
                         st.session_state.board[row][col] = peca_atk
                         st.session_state.board[orig_r][orig_c] = "⬜"
-                        
-                        # ACIONA A TRAVA DE FIM DE JOGO
                         st.session_state.game_over = True
                         st.session_state.vencedor = "Verde (Você)"
                         st.balloons() 
                         st.session_state.selected_pos = None
-                        return # Encerra a função imediatamente e não passa o turno
+                        return
                 
-                st.session_state.turno_atual = "vermelho"
+                # Se o jogador realizou a jogada com sucesso, a máquina responde imediatamente
+                if movimento_valido and not st.session_state.get("game_over"):
+                    jogada_da_maquina()
             else:
                 st.toast("Movimento inválido!", icon="🚨")
                 
@@ -257,21 +265,13 @@ if "board" not in st.session_state:
             
     st.session_state.board = board
     st.session_state.selected_pos = None
-
-if "turno_atual" not in st.session_state:
-    st.session_state.turno_atual = "verde"
     st.session_state.game_over = False
     st.session_state.vencedor = None
-
-if st.session_state.get("turno_atual") == "vermelho" and not st.session_state.get("game_over"):
-    jogada_da_maquina()
-    st.rerun()
 
 # ==========================================
 # 5. INTERFACE DO TABULEIRO
 # ==========================================
 
-# Banner de Vitória Principal
 if st.session_state.get("game_over"):
     st.success(f"🎉 JOGO ENCERRADO! A vitória é do exército {st.session_state.vencedor}!", icon="🏆")
 else:
@@ -284,10 +284,8 @@ for row_idx in range(10):
     for col_idx in range(10):
         with cols[col_idx]:
             cell_content = st.session_state.board[row_idx][col_idx]
-            
             texto_exibicao = cell_content
             
-            # Quando o jogo acaba, a névoa de guerra é desligada para você ver o tabuleiro inteiro!
             if nevoa_ativada and not st.session_state.get("game_over") and "🟥" in cell_content:
                 texto_exibicao = "🟥"
             
