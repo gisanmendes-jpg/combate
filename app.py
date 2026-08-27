@@ -1,4 +1,5 @@
 import streamlit as st
+import random
 
 st.set_page_config(layout="centered")
 st.markdown("""
@@ -34,20 +35,37 @@ st.title("⚔️ Combate - Prototipando o Tabuleiro")
 
 # 1. Inicializa o estado do jogo na memória do Streamlit
 if "board" not in st.session_state:
-    # Cria uma matriz 10x10 vazia
+    # 1. Gera os exércitos e embaralha a ordem das listas
+    pecas_verdes = gerar_exercito("verde", "🟩")
+    pecas_vermelhas = gerar_exercito("vermelho", "🟥")
+    
+    random.shuffle(pecas_verdes)
+    random.shuffle(pecas_vermelhas)
+    
+    # 2. Cria o tabuleiro vazio
     board = [["⬜" for _ in range(10)] for _ in range(10)]
     
-    # Adicionando os Lagos Centrais (Típico do Combate)
+    # 3. Adiciona os Lagos
     for r in [4, 5]:
         for c in [2, 3, 6, 7]:
             board[r][c] = "🌊"
             
-    # Adicionando algumas peças de exemplo
-    board[0][0] = "🟩" # Peça Jogador 1
-    board[9][9] = "🟥" # Peça Jogador 2
-    
+    # 4. Distribui o exército Verde (Linhas 0 a 3)
+    idx = 0
+    for r in range(4):
+        for c in range(10):
+            board[r][c] = pecas_verdes[idx]
+            idx += 1
+            
+    # 5. Distribui o exército Vermelho (Linhas 6 a 9)
+    idx = 0
+    for r in range(6, 10):
+        for c in range(10):
+            board[r][c] = pecas_vermelhas[idx]
+            idx += 1
+            
     st.session_state.board = board
-    st.session_state.selected_pos = None # Guarda a coordenada do primeiro clique
+    st.session_state.selected_pos = None
 
 def get_team(cell_content):
     # Retorna vazio se for água ou espaço em branco
