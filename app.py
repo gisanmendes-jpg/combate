@@ -1,6 +1,5 @@
 import streamlit as st
 import random
-import time
 
 st.set_page_config(layout="centered")
 st.markdown("""
@@ -14,6 +13,12 @@ st.markdown("""
             font-size: 24px !important;
         }
         .stButton { margin-bottom: -16px !important; }
+
+        /* Estilo para destacar a última jogada da Máquina no Tabuleiro */
+        .destaque-maquina > button > div > button, 
+        div.stButton > button[kind="secondary"] {
+            /* Regra aplicada via classe personalizada no Streamlit se necessário */
+        }
 
         /* Estilo visual das Cartas de Combate */
         .arena-container {
@@ -203,14 +208,17 @@ def jogada_da_maquina():
     peca_atk = st.session_state.board[orig_r][orig_c]
     peca_def = st.session_state.board[target_r][target_c]
     
-    # Mensagem descritiva clara para você não ficar perdida
     orig_coord = f"({orig_r+1}, {orig_c+1})"
     target_coord = f"({target_r+1}, {target_c+1})"
+    
+    # Registra a última posição para destacar visualmente no tabuleiro
+    st.session_state.ultima_origem_maquina = (orig_r, orig_c)
+    st.session_state.ultimo_destino_maquina = (target_r, target_c)
     
     if peca_def == "⬜":
         st.session_state.board[target_r][target_c] = peca_atk
         st.session_state.board[orig_r][orig_c] = "⬜"
-        st.session_state.ultimo_movimento_maquina = f"🤖 A Máquina avançou uma tropa da posição {orig_coord} para {target_coord}."
+        st.session_state.ultimo_movimento_maquina = f"🤖 A Máquina avançou da posição {orig_coord} para {target_coord}."
     else:
         resultado = resolver_combate(peca_atk, peca_def)
         st.session_state.dados_combate = {
@@ -247,6 +255,10 @@ def handle_click(row, col):
                 
                 orig_coord = f"({orig_r+1}, {orig_c+1})"
                 target_coord = f"({row+1}, {col+1})"
+                
+                # Limpa o destaque da máquina quando o jogador faz um movimento
+                st.session_state.ultima_origem_maquina = None
+                st.session_state.ultimo_destino_maquina = None
                 
                 if peca_def == "⬜":
                     st.session_state.board[row][col] = peca_atk
@@ -297,6 +309,8 @@ if "board" not in st.session_state:
     st.session_state.historico_combates = []
     st.session_state.fase_combate = False
     st.session_state.dados_combate = None
+    st.session_state.ultima_origem_maquina = None
+    st.session_state.ultimo_destino_maquina = None
     st.session_state.ultimo_movimento_maquina = "Partida iniciada. Faça sua jogada!"
 
 # ==========================================
@@ -420,17 +434,19 @@ else:
         st.sidebar.info("Ainda não ocorreram combates.")
 
     # ==========================================
-    # 7. INTERFACE DO TABULEIRO
+    # 7. INTERFACE DO TABULEIRO (COM DESTAQUE NA JOGADA INIMIGA)
     # ==========================================
 
     if st.session_state.get("game_over"):
         st.success(f"🎉 JOGO ENCERRADO! A vitória é do exército {st.session_state.vencedor}!", icon="🏆")
     else:
         st.write("Você é o **Verde**. Faça sua jogada e depois clique em **'Passar a vez para a Máquina'** na barra lateral.")
-        # Caixa de texto informativa exibindo o que a máquina acabou de fazer
         st.info(st.session_state.get("ultimo_movimento_maquina", "Aguardando primeira jogada..."), icon="📢")
 
     nevoa_ativada = st.toggle("🌫️ Ocultar patentes inimigas", value=True)
+
+    # Coordenada atual da última jogada da máquina para destacar
+    destino_maquina = st.session_state.get("ultimo_destino_maquina")
 
     for row_idx in range(10):
         cols = st.columns(10) 
@@ -443,7 +459,17 @@ else:
                     texto_exibicao = "🟥"
                 
                 is_selected = st.session_state.selected_pos == (row_idx, col_idx)
-                btn_type = "primary" if is_selected else "secondary"
+                
+                # Se esta casa for exatamente onde a máquina acabou de parar, destacamos o botão como "primary" (vermelho/destacado)
+                is_last_move = (destino_maquina == (row_idx, col_idx))
+                
+                if is_selected:
+                    btn_type = "primary"
+                elif is_last_move:
+                    btn_type = "primary"  # Destaca visualmente a peça que acabou de andar
+                    texto_exibicao = f"📍 {texto_exibicao}"  # Adiciona um marcador indicador na casa
+                else:
+                    btn_type = "secondary"
                 
                 st.button(
                     label=texto_exibicao,
