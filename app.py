@@ -4,135 +4,154 @@ import random
 st.set_page_config(layout="centered")
 st.markdown("""
     <style>
-        /* 1. Zera o gap (espaço horizontal) entre as colunas nativas do Streamlit */
-        [data-testid="stHorizontalBlock"] {
-            gap: 0rem !important;
-        }
-        
-        /* 2. Zera o padding interno de cada coluna */
-        [data-testid="column"] {
-            padding: 0 !important;
-        }
-
-        /* 3. Força o botão a ser perfeitamente quadrado e sem bordas arredondadas */
+        [data-testid="stHorizontalBlock"] { gap: 0rem !important; }
+        [data-testid="column"] { padding: 0 !important; }
         .stButton > button {
-            width: 100% !important;
-            height: 60px !important;
-            border-radius: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            border: 1px solid #d3d3d3 !important;
+            width: 100% !important; height: 60px !important;
+            border-radius: 0px !important; margin: 0px !important;
+            padding: 0px !important; border: 1px solid #d3d3d3 !important;
             font-size: 24px !important;
         }
-
-        /* 4. Truque para colar as linhas verticais (puxa o botão de baixo para cima) */
-        .stButton {
-            margin-bottom: -16px !important; 
-        }
+        .stButton { margin-bottom: -16px !important; }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("⚔️ Combate - Prototipando o Tabuleiro")
+st.title("⚔️ Combate - Jogador vs Máquina")
 
-if st.button("🔄 Reiniciar Partida (Limpar Memória)"):
+if st.button("🔄 Reiniciar Partida"):
     st.session_state.clear()
     st.rerun()
 
 # ==========================================
-# 1. ÁREA DE FUNÇÕES (Todas juntas no topo)
+# 1. ÁREA DE FUNÇÕES BASE
 # ==========================================
 
 def get_team(cell_content):
-    if cell_content in ["⬜", "🌊"]:
-        return None
-    if "🟩" in cell_content:
-        return "verde"
-    if "🟥" in cell_content:
-        return "vermelho"
+    if cell_content in ["⬜", "🌊"]: return None
+    if "🟩" in cell_content: return "verde"
+    if "🟥" in cell_content: return "vermelho"
     return None
 
 def gerar_exercito(cor, emoji_cor):
     composicao = {
-        "Prisioneiro": 1,
-        "Bomba": 6,
-        "10-Marechal": 1,
-        "9-General": 1,
-        "8-Coronel": 2,
-        "7-Major": 3,
-        "6-Capitao": 4,
-        "5-Tenente": 4,
-        "4-Sargento": 4,
-        "3-Cabo": 5,
-        "2-Soldado": 8,
-        "1-Espiao": 1
+        "Prisioneiro": 1, "Bomba": 6, "10-Marechal": 1, "9-General": 1,
+        "8-Coronel": 2, "7-Major": 3, "6-Capitao": 4, "5-Tenente": 4,
+        "4-Sargento": 4, "3-Cabo": 5, "2-Soldado": 8, "1-Espiao": 1
     }
     exercito = []
     for patente, quantidade in composicao.items():
         for _ in range(quantidade):
-            peca = f"{emoji_cor} {patente}"
-            exercito.append(peca)
+            exercito.append(f"{emoji_cor} {patente}")
     return exercito
 
-def resolver_combate(atacante, defensor):
+def resolver_combate(atacante, defensor, silencioso=False):
     if " " not in atacante or " " not in defensor:
-        st.toast("Erro de leitura na peça. Combate anulado.", icon="⚠️")
         return "empate"
         
     nome_atk = atacante.split(" ", 1)[1]
     nome_def = defensor.split(" ", 1)[1]
     
-    if nome_def == "Prisioneiro":
-        return "vitoria_jogo"
-        
+    if nome_def == "Prisioneiro": return "vitoria_jogo"
     if nome_def == "Bomba":
-        if "3-Cabo" in nome_atk:
-            return "vitoria"
-        else:
-            return "derrota"
-            
-    if nome_atk == nome_def:
-        return "empate"
-        
-    if "1-Espiao" in nome_atk and "10-Marechal" in nome_def:
-        return "vitoria"
+        return "vitoria" if "3-Cabo" in nome_atk else "derrota"
+    if nome_atk == nome_def: return "empate"
+    if "1-Espiao" in nome_atk and "10-Marechal" in nome_def: return "vitoria"
         
     forca_atk = int(nome_atk.split("-")[0])
     forca_def = int(nome_def.split("-")[0])
     
-    if forca_atk > forca_def:
-        return "vitoria"
-    else:
-        return "derrota"
+    return "vitoria" if forca_atk > forca_def else "derrota"
 
 def is_valid_move(orig_r, orig_c, target_r, target_c):
-    orig_cell = st.session_state.board[orig_r][orig_c]
-    
-    if "Bomba" in orig_cell or "Prisioneiro" in orig_cell:
-        return False
+    # Protege contra limites do tabuleiro (importante para a IA)
+    if not (0 <= target_r < 10 and 0 <= target_c < 10): return False
         
-    distance = abs(orig_r - target_r) + abs(orig_c - target_c)
-    if distance != 1:
-        return False
+    orig_cell = st.session_state.board[orig_r][orig_c]
+    if "Bomba" in orig_cell or "Prisioneiro" in orig_cell: return False
+        
+    if abs(orig_r - target_r) + abs(orig_c - target_c) != 1: return False
         
     target_cell = st.session_state.board[target_r][target_c]
-    if target_cell == "🌊":
-        return False
+    if target_cell == "🌊": return False
         
-    orig_team = get_team(orig_cell)
-    target_team = get_team(target_cell)
-    if target_team is not None and orig_team == target_team:
-        return False
+    if get_team(orig_cell) == get_team(target_cell): return False
         
     return True
 
-def handle_click(row, col):
-    clicked_item = st.session_state.board[row][col]
+# ==========================================
+# 2. MOTOR DA INTELIGÊNCIA ARTIFICIAL
+# ==========================================
+
+def jogada_da_maquina():
+    # 1. Encontra todas as peças vermelhas móveis
+    pecas_moveis = []
+    for r in range(10):
+        for c in range(10):
+            cell = st.session_state.board[r][c]
+            if "🟥" in cell and "Bomba" not in cell and "Prisioneiro" not in cell:
+                pecas_moveis.append((r, c))
     
-    if clicked_item == "🌊":
-        return
+    # Embaralha para o bot não ser previsível
+    random.shuffle(pecas_moveis)
+    
+    movimento_feito = False
+    
+    # 2. Tenta mover uma peça válida
+    for (orig_r, orig_c) in pecas_moveis:
+        # Tenta as 4 direções ortogonais aleatoriamente
+        direcoes = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+        random.shuffle(direcoes)
+        
+        for dr, dc in direcoes:
+            target_r, target_c = orig_r + dr, orig_c + dc
+            
+            if is_valid_move(orig_r, orig_c, target_r, target_c):
+                peca_atk = st.session_state.board[orig_r][orig_c]
+                peca_def = st.session_state.board[target_r][target_c]
+                
+                # Executa o movimento
+                if peca_def == "⬜":
+                    st.session_state.board[target_r][target_c] = peca_atk
+                    st.session_state.board[orig_r][orig_c] = "⬜"
+                else:
+                    resultado = resolver_combate(peca_atk, peca_def)
+                    if resultado == "vitoria":
+                        st.session_state.board[target_r][target_c] = peca_atk
+                        st.session_state.board[orig_r][orig_c] = "⬜"
+                    elif resultado == "derrota":
+                        st.session_state.board[orig_r][orig_c] = "⬜"
+                    elif resultado == "empate":
+                        st.session_state.board[target_r][target_c] = "⬜"
+                        st.session_state.board[orig_r][orig_c] = "⬜"
+                    elif resultado == "vitoria_jogo":
+                        st.session_state.board[target_r][target_c] = peca_atk
+                        st.session_state.board[orig_r][orig_c] = "⬜"
+                        st.error("💀 A Máquina capturou seu Prisioneiro! Você perdeu.")
+                
+                st.toast("A Máquina fez a sua jogada!", icon="🤖")
+                movimento_feito = True
+                break # Sai do loop de direções
+                
+        if movimento_feito:
+            break # Sai do loop de peças
+            
+    # Devolve o turno para o jogador
+    st.session_state.turno_atual = "verde"
+
+# ==========================================
+# 3. LÓGICA DE CLIQUE DO JOGADOR
+# ==========================================
+
+def handle_click(row, col):
+    # Se não for a vez do jogador, ignora cliques
+    if st.session_state.turno_atual != "verde": return
+        
+    clicked_item = st.session_state.board[row][col]
+    if clicked_item == "🌊": return
         
     if st.session_state.selected_pos is None:
-        if clicked_item != "⬜":
+        # Só deixa selecionar peças verdes
+        if "🟩" in clicked_item:
             st.session_state.selected_pos = (row, col)
     else:
         orig_r, orig_c = st.session_state.selected_pos
@@ -147,95 +166,90 @@ def handle_click(row, col):
                     st.session_state.board[orig_r][orig_c] = "⬜" 
                 else:
                     resultado = resolver_combate(peca_atk, peca_def)
-                    
                     if resultado == "vitoria":
                         st.session_state.board[row][col] = peca_atk
                         st.session_state.board[orig_r][orig_c] = "⬜"
-                        st.toast("Você venceu o combate! Inimigo abatido.", icon="⚔️")
+                        st.toast("Você venceu o combate!", icon="⚔️")
                     elif resultado == "derrota":
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.toast("Sua peça foi destruída!", icon="💥")
                     elif resultado == "empate":
                         st.session_state.board[row][col] = "⬜"
                         st.session_state.board[orig_r][orig_c] = "⬜"
-                        st.toast("Combate empatado! Ambas peças destruídas.", icon="🤝")
+                        st.toast("Combate empatado!", icon="🤝")
                     elif resultado == "vitoria_jogo":
                         st.session_state.board[row][col] = peca_atk
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.balloons() 
-                        st.success("🏆 Você capturou o Prisioneiro inimigo! FIM DE JOGO!")
+                        st.success("🏆 Você capturou o Prisioneiro inimigo! VITÓRIA!")
+                
+                # Passa a vez para a máquina
+                st.session_state.turno_atual = "vermelho"
             else:
                 st.toast("Movimento inválido!", icon="🚨")
                 
         st.session_state.selected_pos = None
 
 # ==========================================
-# 2. INICIALIZAÇÃO DO JOGO
+# 4. INICIALIZAÇÃO DO ESTADO
 # ==========================================
 
 if "board" not in st.session_state:
-    # Como gerar_exercito já foi lida no topo, agora funciona!
     pecas_verdes = gerar_exercito("verde", "🟩")
     pecas_vermelhas = gerar_exercito("vermelho", "🟥")
-    
     random.shuffle(pecas_verdes)
     random.shuffle(pecas_vermelhas)
     
     board = [["⬜" for _ in range(10)] for _ in range(10)]
-    
     for r in [4, 5]:
-        for c in [2, 3, 6, 7]:
-            board[r][c] = "🌊"
+        for c in [2, 3, 6, 7]: board[r][c] = "🌊"
             
     idx = 0
     for r in range(4):
         for c in range(10):
-            board[r][c] = pecas_verdes[idx]
-            idx += 1
+            board[r][c] = pecas_verdes[idx]; idx += 1
             
     idx = 0
     for r in range(6, 10):
         for c in range(10):
-            board[r][c] = pecas_vermelhas[idx]
-            idx += 1
+            board[r][c] = pecas_vermelhas[idx]; idx += 1
             
     st.session_state.board = board
     st.session_state.selected_pos = None
+    st.session_state.turno_atual = "verde"
+
+# --- Gatilho da IA ---
+# Se for a vez do vermelho, a máquina joga e recarrega a tela
+if st.session_state.turno_atual == "vermelho":
+    jogada_da_maquina()
+    st.rerun()
 
 # ==========================================
-# 3. RENDERIZAÇÃO DA INTERFACE
+# 5. INTERFACE DO TABULEIRO
 # ==========================================
 
-# ==========================================
-# 3. RENDERIZAÇÃO DA INTERFACE
-# ==========================================
+st.write("Você é o **Verde**. Clique na sua peça e depois no destino.")
+nevoa_ativada = st.toggle("🌫️ Ocultar patentes inimigas", value=True)
 
-st.write("Selecione uma peça verde ou vermelha e depois clique em um quadrado branco para mover.")
-
-# Adiciona um interruptor para ativar/desativar a visão do inimigo
-nevoa_ativada = st.toggle("🌫️ Ativar Névoa de Guerra (Ocultar inimigos)", value=True)
-
-# Loop para criar as 10 linhas
 for row_idx in range(10):
     cols = st.columns(10) 
-    
     for col_idx in range(10):
         with cols[col_idx]:
             cell_content = st.session_state.board[row_idx][col_idx]
             
-            # Lógica do Fog of War: Oculta o texto se for peça vermelha e a névoa estiver ligada
+            # Oculta APENAS as peças vermelhas se a névoa estiver ativa
             texto_exibicao = cell_content
             if nevoa_ativada and "🟥" in cell_content:
-                texto_exibicao = "🟥" # Mostra apenas a cor, sem a patente
+                texto_exibicao = "🟥"
             
             is_selected = st.session_state.selected_pos == (row_idx, col_idx)
-            button_type = "primary" if is_selected else "secondary"
+            btn_type = "primary" if is_selected else "secondary"
             
             st.button(
-                label=texto_exibicao, # Passa a usar o texto filtrado
+                label=texto_exibicao,
                 key=f"btn_{row_idx}_{col_idx}",
                 on_click=handle_click,
                 args=(row_idx, col_idx), 
-                type=button_type,
+                type=btn_type,
                 use_container_width=True 
             )
