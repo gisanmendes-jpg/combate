@@ -49,24 +49,41 @@ if "board" not in st.session_state:
     st.session_state.board = board
     st.session_state.selected_pos = None # Guarda a coordenada do primeiro clique
 
+def get_team(cell_content):
+    # Retorna vazio se for água ou espaço em branco
+    if cell_content in ["⬜", "🌊"]:
+        return None
+    # Identifica o time pela cor do emoji base
+    if "🟩" in cell_content:
+        return "verde"
+    if "🟥" in cell_content:
+        return "vermelho"
+    
+    return None
+
+
 def is_valid_move(orig_r, orig_c, target_r, target_c):
-    # 1. Distância de Manhattan
-    # abs() retorna o valor absoluto (positivo) da diferença matemática
+    # 1. Distância de Manhattan (Andar apenas 1 casa ortogonal)
     distance = abs(orig_r - target_r) + abs(orig_c - target_c)
     
-    # Se a distância for diferente de 1, significa que o jogador tentou 
-    # pular casas (distância > 1), andar na diagonal (distância = 2) 
-    # ou não saiu do lugar (distância = 0)
     if distance != 1:
         return False
         
-    # 2. Bloqueio dos Lagos
-    # Garante que a peça não caia na água
     target_cell = st.session_state.board[target_r][target_c]
+    orig_cell = st.session_state.board[orig_r][orig_c]
+    
+    # 2. Bloqueio dos Lagos
     if target_cell == "🌊":
         return False
         
-    # Se passou pelas regras, o movimento é válido
+    # 3. Trava de Fogo Amigo (Nova Regra)
+    orig_team = get_team(orig_cell)
+    target_team = get_team(target_cell)
+    
+    # Se a casa de destino tem um time, e é o MESMO time da sua peça, bloqueia
+    if target_team is not None and orig_team == target_team:
+        return False
+        
     return True
 
 # 2. Função que lida com o clique nos botões
