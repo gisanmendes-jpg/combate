@@ -49,32 +49,51 @@ if "board" not in st.session_state:
     st.session_state.board = board
     st.session_state.selected_pos = None # Guarda a coordenada do primeiro clique
 
+def is_valid_move(orig_r, orig_c, target_r, target_c):
+    # 1. Distância de Manhattan
+    # abs() retorna o valor absoluto (positivo) da diferença matemática
+    distance = abs(orig_r - target_r) + abs(orig_c - target_c)
+    
+    # Se a distância for diferente de 1, significa que o jogador tentou 
+    # pular casas (distância > 1), andar na diagonal (distância = 2) 
+    # ou não saiu do lugar (distância = 0)
+    if distance != 1:
+        return False
+        
+    # 2. Bloqueio dos Lagos
+    # Garante que a peça não caia na água
+    target_cell = st.session_state.board[target_r][target_c]
+    if target_cell == "🌊":
+        return False
+        
+    # Se passou pelas regras, o movimento é válido
+    return True
+
 # 2. Função que lida com o clique nos botões
 def handle_click(row, col):
     clicked_item = st.session_state.board[row][col]
     
-    # Impede clique nos lagos
-    if clicked_item == "🌊":
-        return
-        
-    # Lógica de Origem e Destino
-    if st.session_state.selected_pos is None:
-        # Primeiro clique: seleciona a peça (se não for espaço vazio)
-        if clicked_item != "⬜":
-            st.session_state.selected_pos = (row, col)
+    # ... (código do primeiro clique continua igual) ...
+    
     else:
-        # Segundo clique: move a peça para o novo local
+        # Segundo clique: tenta mover a peça
         orig_r, orig_c = st.session_state.selected_pos
         
-        # Se clicou no mesmo lugar, apenas cancela a seleção
         if (orig_r, orig_c) != (row, col):
-            # Move a peça
-            piece = st.session_state.board[orig_r][orig_c]
-            st.session_state.board[row][col] = piece
-            st.session_state.board[orig_r][orig_c] = "⬜" # Esvazia origem
             
-        # Limpa a seleção para o próximo turno
+            # CHAMA A VALIDAÇÃO AQUI
+            if is_valid_move(orig_r, orig_c, row, col):
+                # Executa o movimento
+                piece = st.session_state.board[orig_r][orig_c]
+                st.session_state.board[row][col] = piece
+                st.session_state.board[orig_r][orig_c] = "⬜" 
+            else:
+                # Opcional: Avisa o jogador usando o st.toast do Streamlit
+                st.toast("Movimento inválido! Ande apenas uma casa ortogonal.", icon="🚨")
+                
+        # Limpa a seleção de qualquer forma para o próximo turno
         st.session_state.selected_pos = None
+
 
 # 3. Desenhando o Grid de Interface
 st.write("Selecione uma peça verde ou vermelha e depois clique em um quadrado branco para mover.")
