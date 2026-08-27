@@ -159,16 +159,20 @@ def jogada_da_maquina():
         if resultado == "vitoria":
             st.session_state.board[target_r][target_c] = peca_atk
             st.session_state.board[orig_r][orig_c] = "⬜"
+            st.session_state.historico_combates.insert(0, f"🤖 Inimigo atacou e venceu!")
         elif resultado == "derrota":
             st.session_state.board[orig_r][orig_c] = "⬜"
+            st.session_state.historico_combates.insert(0, f"🤖 Inimigo atacou sua peça e foi destruído!")
         elif resultado == "empate":
             st.session_state.board[target_r][target_c] = "⬜"
             st.session_state.board[orig_r][orig_c] = "⬜"
+            st.session_state.historico_combates.insert(0, f"🤖 Combate empatado entre as tropas.")
         elif resultado == "vitoria_jogo":
             st.session_state.board[target_r][target_c] = peca_atk
             st.session_state.board[orig_r][orig_c] = "⬜"
             st.session_state.game_over = True
             st.session_state.vencedor = "Vermelho (Máquina)"
+            st.session_state.historico_combates.insert(0, f"🏆 A Máquina capturou o Prisioneiro!")
             
     st.toast("A Máquina executou a jogada dela!", icon="🤖")
 
@@ -189,6 +193,9 @@ def handle_click(row, col):
         orig_r, orig_c = st.session_state.selected_pos
         
         if (orig_r, orig_c) != (row, col):
+            if is_valid_move(orig_r, orig_c, target_r, target_c := row): # Mantém a assinatura correta do target
+                pass # Tratado abaixo
+            
             if is_valid_move(orig_r, orig_c, row, col):
                 peca_atk = st.session_state.board[orig_r][orig_c]
                 peca_def = st.session_state.board[row][col]
@@ -198,22 +205,28 @@ def handle_click(row, col):
                     st.session_state.board[orig_r][orig_c] = "⬜" 
                 else:
                     resultado = resolver_combate(peca_atk, peca_def)
+                    nome_patente = peca_atk.split(" ", 1)[1]
+                    
                     if resultado == "vitoria":
                         st.session_state.board[row][col] = peca_atk
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.toast("Você venceu o combate!", icon="⚔️")
+                        st.session_state.historico_combates.insert(0, f"⚔️ Seu {nome_patente} venceu o combate!")
                     elif resultado == "derrota":
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.toast("Sua peça foi destruída!", icon="💥")
+                        st.session_state.historico_combates.insert(0, f"💥 Seu {nome_patente} foi destruído!")
                     elif resultado == "empate":
                         st.session_state.board[row][col] = "⬜"
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.toast("Combate empatado!", icon="🤝")
+                        st.session_state.historico_combates.insert(0, f"🤝 Empate! Seu {nome_patente} e o inimigo caíram.")
                     elif resultado == "vitoria_jogo":
                         st.session_state.board[row][col] = peca_atk
                         st.session_state.board[orig_r][orig_c] = "⬜"
                         st.session_state.game_over = True
                         st.session_state.vencedor = "Verde (Você)"
+                        st.session_state.historico_combates.insert(0, f"🏆 Você capturou o Prisioneiro inimigo!")
                         st.balloons() 
                         st.session_state.selected_pos = None
                         return
@@ -251,26 +264,55 @@ if "board" not in st.session_state:
     st.session_state.game_over = False
     st.session_state.vencedor = None
     st.session_state.turno_atual = "vermelho"
+    st.session_state.historico_combates = []
 
 # ==========================================
-# 5. BOTÕES DE CONTROLE E INTERFACE
+# 5. BARRA LATERAL (SIDEBAR) - PAINEL DE CONTROLE
 # ==========================================
 
-col_btn1, col_btn2 = st.columns([1, 1])
-with col_btn1:
-    if st.button("🔄 Reiniciar Partida"):
-        st.session_state.clear()
+st.sidebar.title("📊 Painel de Controle")
+
+if st.sidebar.button("🔄 Reiniciar Partida"):
+    st.session_state.clear()
+    st.rerun()
+
+if st.sidebar.button("🤖 Passar a vez para a Máquina"):
+    if not st.session_state.get("game_over"):
+        jogada_da_maquina()
         st.rerun()
-with col_btn2:
-    if st.button("🤖 Passar a vez para a Máquina"):
-        if not st.session_state.get("game_over"):
-            jogada_da_maquina()
-            st.rerun()
+
+st.sidebar.divider()
+
+# Contagem dinâmica de peças vivas no tabuleiro
+vivas_verdes = 0
+vivas_vermelhas = 0
+for r in range(10):
+    for c in range(10):
+        celula = st.session_state.board[r][c]
+        if "🟩" in celula: vivas_verdes += 1
+        elif "🟥" in celula: vivas_vermelhas += 1
+
+st.sidebar.subheader("🛡️ Status dos Exércitos")
+st.sidebar.markdown(f"* 🟩 Suas Peças Vivas: **{vivas_verdes} / 40***")
+st.sidebar.markdown(f"* 🟥 Peças Inimigas: **{vivas_vermelhas} / 40***")
+
+st.sidebar.divider()
+
+st.sidebar.subheader("📜 Diário de Guerra")
+if st.session_state.get("historico_combates"):
+    for evento in st.session_state.historico_combates[:6]: # Mostra os últimos 6 eventos
+        st.sidebar.markdown(f"- {evento}")
+else:
+    st.sidebar.info("Ainda não ocorreram combates.")
+
+# ==========================================
+# 6. INTERFACE DO TABULEIRO
+# ==========================================
 
 if st.session_state.get("game_over"):
     st.success(f"🎉 JOGO ENCERRADO! A vitória é do exército {st.session_state.vencedor}!", icon="🏆")
 else:
-    st.write("Você é o **Verde**. Faça sua jogada e depois clique em **'Passar a vez para a Máquina'**.")
+    st.write("Você é o **Verde**. Faça sua jogada e depois clique em **'Passar a vez para a Máquina'** na barra lateral.")
 
 nevoa_ativada = st.toggle("🌫️ Ocultar patentes inimigas", value=True)
 
