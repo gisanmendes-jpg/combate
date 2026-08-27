@@ -1,5 +1,6 @@
 import streamlit as st
 import random
+import time
 
 st.set_page_config(layout="centered")
 st.markdown("""
@@ -92,16 +93,13 @@ def avaliar_movimento(orig_r, orig_c, target_r, target_c):
     peca_atk = st.session_state.board[orig_r][orig_c]
     peca_def = st.session_state.board[target_r][target_c]
     
-    # Prioriza andar para frente (em direção ao exército verde)
     if target_r < orig_r: score += 10 
         
-    # Atacar peças do jogador
     if peca_def != "⬜" and "🟩" in peca_def:
         score += 50
         if "Prisioneiro" in peca_def:
             score += 1000
             
-    # Movimentação longa de soldados
     if "2-Soldado" in peca_atk:
         distancia = abs(orig_r - target_r) + abs(orig_c - target_c)
         if distancia > 1:
@@ -139,13 +137,13 @@ def jogada_da_maquina():
                             movimentos_possiveis.append({
                                 "orig": (r, c), "target": (target_r, target_c), "score": score
                             })
-                            # Se for combate, o soldado para naquela casa
                             if st.session_state.board[target_r][target_c] != "⬜":
                                 break
                         else:
                             break
                             
     if not movimentos_possiveis:
+        st.session_state.aguardando_maquina = False
         return
         
     max_score = max(movimentos_possiveis, key=lambda x: x["score"])["score"]
@@ -176,21 +174,21 @@ def jogada_da_maquina():
             st.session_state.board[orig_r][orig_c] = "⬜"
             st.session_state.game_over = True
             st.session_state.vencedor = "Vermelho (Máquina)"
+            st.session_state.aguardando_maquina = False
             return
             
-    st.toast("A Máquina fez a sua jogada!", icon="🤖")
+    st.session_state.aguardando_maquina = False
 
 # ==========================================
 # 3. CONTROLE DE CLIQUES DO JOGADOR
 # ==========================================
 
 def handle_click(row, col):
-    if st.session_state.get("game_over"): return
+    if st.session_state.get("game_over") or st.session_state.get("aguardando_maquina"): return
         
     clicked_item = st.session_state.board[row][col]
     if clicked_item == "🌊": return
         
-    # Primeiro clique: seleciona peça verde
     if st.session_state.selected_pos is None:
         if "🟩" in clicked_item:
             st.session_state.selected_pos = (row, col)
@@ -233,9 +231,9 @@ def handle_click(row, col):
                         st.session_state.selected_pos = None
                         return
                 
-                # Se o jogador realizou a jogada com sucesso, a máquina responde imediatamente
+                # Ativa a bandeira de espera para a IA rodar no fluxo principal
                 if movimento_valido and not st.session_state.get("game_over"):
-                    jogada_da_maquina()
+                    st.session_state.aguardando_maquina = True
             else:
                 st.toast("Movimento inválido!", icon="🚨")
                 
@@ -267,9 +265,20 @@ if "board" not in st.session_state:
     st.session_state.selected_pos = None
     st.session_state.game_over = False
     st.session_state.vencedor = None
+    st.session_state.aguardando_maquina = False
 
 # ==========================================
-# 5. INTERFACE DO TABULEIRO
+# 5. GATILHO DO TIMER DA MÁQUINA
+# ==========================================
+
+if st.session_state.get("aguardando_maquina") and not st.session_state.get("game_over"):
+    st.info("🤖 A Máquina está pensando...", icon="⏳")
+    time.sleep(2)  # Pausa de exatamente 2 segundos para você acompanhar
+    jogada_da_maquina()
+    st.rerun()
+
+# ==========================================
+# 6. INTERFACE DO TABULEIRO
 # ==========================================
 
 if st.session_state.get("game_over"):
