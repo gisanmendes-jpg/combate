@@ -116,9 +116,15 @@ pecas_verdes = gerar_exercito("verde", "🟩")
 pecas_vermelhas = gerar_exercito("vermelho", "🟥")
 
 def resolver_combate(atacante, defensor):
-    # Separa o emoji do nome da peça. Ex: "🟩 3-Cabo" vira "3-Cabo"
+    # Trava de Segurança: Se alguma das peças não tiver espaço, força um empate para não quebrar o jogo
+    if " " not in atacante or " " not in defensor:
+        st.toast("Erro de leitura na peça. Combate anulado.", icon="⚠️")
+        return "empate"
+        
+    # Separa o emoji do nome da peça
     nome_atk = atacante.split(" ", 1)[1]
     nome_def = defensor.split(" ", 1)[1]
+    
     
     # 1. Condição de Vitória do Jogo
     if nome_def == "Prisioneiro":
