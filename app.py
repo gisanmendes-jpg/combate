@@ -67,6 +67,10 @@ if "board" not in st.session_state:
     st.session_state.board = board
     st.session_state.selected_pos = None
 
+if st.button("🔄 Reiniciar Partida (Limpar Memória)"):
+    st.session_state.clear()
+    st.rerun()
+
 def get_team(cell_content):
     # Retorna vazio se for água ou espaço em branco
     if cell_content in ["⬜", "🌊"]:
