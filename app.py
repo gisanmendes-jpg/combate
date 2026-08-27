@@ -113,6 +113,13 @@ pecas_vermelhas = gerar_exercito("vermelho", "🟥")
 
 
 def is_valid_move(orig_r, orig_c, target_r, target_c):
+    orig_cell = st.session_state.board[orig_r][orig_c]
+    
+    # 0. Impede que peças imóveis ataquem
+    if "Bomba" in orig_cell or "Prisioneiro" in orig_cell:
+        return False
+        
+   
     # 1. Distância de Manhattan (Andar apenas 1 casa ortogonal)
     distance = abs(orig_r - target_r) + abs(orig_c - target_c)
     
