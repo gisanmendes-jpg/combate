@@ -4,7 +4,7 @@ import random
 st.set_page_config(layout="centered", page_title="Combate Tático", page_icon="⚔️")
 
 # ==========================================
-# ESTILIZAÇÃO VISUAL TÁTICA (CSS COM ÍCONES E QUEBRA DE LINHA)
+# ESTILIZAÇÃO VISUAL TÁTICA
 # ==========================================
 st.markdown("""
     <style>
@@ -103,29 +103,25 @@ st.markdown("""
             color: #ef4444;
             text-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
         }
+        
+        /* Barra de rolagem personalizada para o Relatório */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 """, unsafe_allow_html=True)
 
 st.markdown("<h1 class='main-title'>⚔️ Centro de Comando: Combate Tático</h1>", unsafe_allow_html=True)
 
 # ==========================================
-# 1. FUNÇÕES DO JOGO E MAPEAMENTO DE ÍCONES
+# 1. FUNÇÕES DO JOGO E ÍCONES
 # ==========================================
 
-# Dicionário visual de ícones (Pequenas imagens)
 ICONES_PECAS = {
-    "Prisioneiro": "🚩", 
-    "Bomba": "💣", 
-    "10-Marechal": "🎖️", 
-    "9-General": "🦅", 
-    "8-Coronel": "🪖", 
-    "7-Major": "🛡️", 
-    "6-Capitao": "⚔️", 
-    "5-Tenente": "🔫", 
-    "4-Sargento": "🎯", 
-    "3-Cabo": "🔧", 
-    "2-Soldado": "🏃", 
-    "1-Espiao": "🕵️"
+    "Prisioneiro": "🚩", "Bomba": "💣", "10-Marechal": "🎖️", "9-General": "🦅", 
+    "8-Coronel": "🪖", "7-Major": "🛡️", "6-Capitao": "⚔️", "5-Tenente": "🔫", 
+    "4-Sargento": "🎯", "3-Cabo": "🔧", "2-Soldado": "🏃", "1-Espiao": "🕵️"
 }
 
 def get_team(cell_content):
@@ -142,8 +138,7 @@ def gerar_exercito(cor, emoji_cor):
     }
     exercito = []
     for patente, quantidade in composicao.items():
-        for _ in range(quantidade):
-            exercito.append(f"{emoji_cor} {patente}")
+        for _ in range(quantidade): exercito.append(f"{emoji_cor} {patente}")
     return exercito
 
 def resolver_combate(atacante, defensor):
@@ -339,8 +334,8 @@ if st.session_state.get("fase_combate"):
     atk = dados["atacante"]
     def_ = dados["defensor"]
     res = dados["resultado"]
+    quem_iniciou = dados["quem_iniciou"]
     
-    # Prepara a exibição com os ícones na carta também
     nome_atk = atk.split(" ", 1)[1] if " " in atk else atk
     nome_def = def_.split(" ", 1)[1] if " " in def_ else def_
     icone_atk = ICONES_PECAS.get(nome_atk, "♟️")
@@ -379,23 +374,34 @@ if st.session_state.get("fase_combate"):
         if st.button("🎯 Retornar ao Centro de Comando", use_container_width=True):
             orig_r, orig_c = dados["orig"]
             target_r, target_c = dados["target"]
+            
+            # --- FORMATAÇÃO DETALHADA PARA O RELATÓRIO ---
+            if quem_iniciou == "jogador":
+                txt_atk = f"<span style='color:#4ade80; font-weight:bold;'>Seu {nome_atk}</span>"
+                txt_def = f"<span style='color:#f87171; font-weight:bold;'>{nome_def} inimigo</span>"
+            else:
+                txt_atk = f"<span style='color:#f87171; font-weight:bold;'>{nome_atk} inimigo</span>"
+                txt_def = f"<span style='color:#4ade80; font-weight:bold;'>Seu {nome_def}</span>"
+
             if res == "vitoria":
                 st.session_state.board[target_r][target_c] = atk
                 st.session_state.board[orig_r][orig_c] = "⬜"
-                st.session_state.historico_combates.insert(0, f"⚔️ {nome_atk} eliminou o inimigo")
+                msg_log = f"🎯 {txt_atk} destruiu {txt_def}."
             elif res == "derrota":
                 st.session_state.board[orig_r][orig_c] = "⬜"
-                st.session_state.historico_combates.insert(0, f"💥 {nome_atk} foi destruído")
+                msg_log = f"💥 {txt_atk} foi eliminado por {txt_def}."
             elif res == "empate":
                 st.session_state.board[target_r][target_c] = "⬜"
                 st.session_state.board[orig_r][orig_c] = "⬜"
-                st.session_state.historico_combates.insert(0, f"🤝 Perda mútua de unidades")
+                msg_log = f"🤝 {txt_atk} e {txt_def} se destruíram."
             elif res == "vitoria_jogo":
                 st.session_state.board[target_r][target_c] = atk
                 st.session_state.board[orig_r][orig_c] = "⬜"
                 st.session_state.game_over = True
                 st.session_state.vencedor = "Verde (Você)" if "🟩" in atk else "Vermelho (Máquina)"
-                st.session_state.historico_combates.insert(0, f"🏆 Prisioneiro asegurado!")
+                msg_log = f"🏆 {txt_atk} capturou o Prisioneiro!"
+                
+            st.session_state.historico_combates.insert(0, msg_log)
             
             st.session_state.fase_combate = False
             st.session_state.dados_combate = None
@@ -424,11 +430,18 @@ else:
     st.sidebar.markdown(f"* 🟥 Forças Inimigas: **{vivas_vermelhas} / 40***")
     st.sidebar.divider()
 
+    # --- NOVO RELATÓRIO DE INTELIGÊNCIA (SCROLLÁVEL E COMPLETO) ---
     st.sidebar.subheader("📜 Relatório de Inteligência")
     if st.session_state.get("historico_combates"):
-        for evento in st.session_state.historico_combates[:6]:
-            st.sidebar.markdown(f"- {evento}")
-    else: st.sidebar.info("Nenhum conflito reportado.")
+        # Cria uma div HTML rolável que guarda todo o histórico sem cortar a tela
+        html_log = "<div style='background-color: #1e293b; padding: 12px; border-radius: 8px; max-height: 350px; overflow-y: auto; border: 1px solid #334155;'>"
+        for idx, evento in enumerate(st.session_state.historico_combates):
+            borda = "border-bottom: 1px solid #334155;" if idx < len(st.session_state.historico_combates)-1 else ""
+            html_log += f"<div style='font-size: 12.5px; line-height: 1.5; padding-bottom: 10px; margin-bottom: 10px; {borda}'>{evento}</div>"
+        html_log += "</div>"
+        st.sidebar.markdown(html_log, unsafe_allow_html=True)
+    else: 
+        st.sidebar.info("Nenhum conflito reportado.")
 
     if st.session_state.get("game_over"):
         st.success(f"🎉 OPERAÇÃO CONCLUÍDA! Vitória do exército {st.session_state.vencedor}!", icon="🏆")
@@ -453,13 +466,12 @@ else:
     for row_idx in range(10):
         row_cols = st.columns(11)
         with row_cols[0]:
-            st.markdown(f"<div style='display: flex; align-items: center; justify-content: center; height: 60px; font-weight: bold; color: #94a3b8; font-size: 14px;'>{row_idx + 1}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='display: flex; align-items: center; justify-content: center; height: 65px; font-weight: bold; color: #94a3b8; font-size: 14px;'>{row_idx + 1}</div>", unsafe_allow_html=True)
             
         for col_idx in range(10):
             with row_cols[col_idx + 1]:
                 cell_content = st.session_state.board[row_idx][col_idx]
                 
-                # --- LÓGICA DE FORMATAÇÃO VISUAL DO BOTÃO ---
                 if cell_content == "⬜":
                     texto_exibicao = " "
                 elif cell_content == "🌊":
@@ -480,7 +492,7 @@ else:
                     btn_type = "primary"
                 elif is_last_move:
                     btn_type = "primary"
-                    if texto_exibicao.strip(): # Adiciona o marcador de última jogada sem quebrar a estética
+                    if texto_exibicao.strip(): 
                         texto_exibicao = f"📍 {texto_exibicao}"
                 else:
                     btn_type = "secondary"
