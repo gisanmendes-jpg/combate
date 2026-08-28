@@ -190,6 +190,7 @@ def jogada_da_maquina():
                             
     if not movimentos_possiveis:
         st.session_state.ultimo_movimento_maquina = "A Máquina tentou se mover, mas está sem jogadas válidas."
+        st.session_state.turno_atual = "verde"
         return
         
     max_score = max(movimentos_possiveis, key=lambda x: x["score"])["score"]
@@ -211,7 +212,8 @@ def jogada_da_maquina():
     if peca_def == "⬜":
         st.session_state.board[target_r][target_c] = peca_atk
         st.session_state.board[orig_r][orig_c] = "⬜"
-        st.session_state.ultimo_movimento_maquina = f"🤖 A Máquina avançou da posição {orig_coord} para {target_coord}."
+        st.session_state.ultimo_movimento_maquina = f"🤖 A Máquina avançou de {orig_coord} para {target_coord}."
+        st.session_state.turno_atual = "verde"
     else:
         resultado = resolver_combate(peca_atk, peca_def)
         st.session_state.dados_combate = {
@@ -231,6 +233,9 @@ def jogada_da_maquina():
 
 def handle_click(row, col):
     if st.session_state.get("game_over") or st.session_state.get("fase_combate"): return
+    
+    if st.session_state.get("turno_atual") != "verde":
+        return
         
     clicked_item = st.session_state.board[row][col]
     if clicked_item == "🌊": return
@@ -256,6 +261,7 @@ def handle_click(row, col):
                     st.session_state.board[row][col] = peca_atk
                     st.session_state.board[orig_r][orig_c] = "⬜" 
                     st.session_state.ultimo_movimento_maquina = f"Sua última jogada: moveu de {orig_coord} para {target_coord}."
+                    st.session_state.turno_atual = "vermelho"
                 else:
                     resultado = resolver_combate(peca_atk, peca_def)
                     st.session_state.dados_combate = {
@@ -298,15 +304,24 @@ if "board" not in st.session_state:
     st.session_state.selected_pos = None
     st.session_state.game_over = False
     st.session_state.vencedor = None
+    st.session_state.turno_atual = "verde"
     st.session_state.historico_combates = []
     st.session_state.fase_combate = False
     st.session_state.dados_combate = None
     st.session_state.ultima_origem_maquina = None
     st.session_state.ultimo_destino_maquina = None
-    st.session_state.ultimo_movimento_maquina = "Partida iniciada. Faça sua jogada!"
+    st.session_state.ultimo_movimento_maquina = "Partida iniciada. Sua vez de jogar!"
 
 # ==========================================
-# 5. TELA DE COMBATE CINEMATOGRÁFICA (CARTAS)
+# 5. GATILHO AUTOMÁTICO DA MÁQUINA
+# ==========================================
+
+if st.session_state.get("turno_atual") == "vermelho" and not st.session_state.get("game_over") and not st.session_state.get("fase_combate"):
+    jogada_da_maquina()
+    st.rerun()
+
+# ==========================================
+# 6. TELA DE COMBATE CINEMATOGRÁFICA (CARTAS)
 # ==========================================
 
 if st.session_state.get("fase_combate"):
@@ -384,10 +399,11 @@ if st.session_state.get("fase_combate"):
             st.session_state.fase_combate = False
             st.session_state.dados_combate = None
             st.session_state.selected_pos = None
+            st.session_state.turno_atual = "verde"
             st.rerun()
 
 # ==========================================
-# 6. BARRA LATERAL (SIDEBAR) - PAINEL DE CONTROLE
+# 7. BARRA LATERAL (SIDEBAR) - PAINEL DE CONTROLE
 # ==========================================
 
 else:
@@ -396,11 +412,6 @@ else:
     if st.sidebar.button("🔄 Reiniciar Partida"):
         st.session_state.clear()
         st.rerun()
-
-    if st.sidebar.button("🤖 Passar a vez para a Máquina"):
-        if not st.session_state.get("game_over"):
-            jogada_da_maquina()
-            st.rerun()
 
     st.sidebar.divider()
 
@@ -426,32 +437,36 @@ else:
         st.sidebar.info("Ainda não ocorreram combates.")
 
     # ==========================================
-    # 7. INTERFACE DO TABULEIRO (COM COORDENADAS)
+    # 8. INTERFACE DO TABULEIRO (COM BOTÕES BLOQUEADOS NO TURNO DA MÁQUINA)
     # ==========================================
 
     if st.session_state.get("game_over"):
         st.success(f"🎉 JOGO ENCERRADO! A vitória é do exército {st.session_state.vencedor}!", icon="🏆")
     else:
-        st.write("Você é o **Verde**. Faça sua jogada e depois clique em **'Passar a vez para a Máquina'** na barra lateral.")
-        st.info(st.session_state.get("ultimo_movimento_maquina", "Aguardando primeira jogada..."), icon="📢")
+        if st.session_state.get("turno_atual") == "verde":
+            st.success("🟢 **Sua vez de jogar!** Selecione sua peça e clique no destino.", icon="👉")
+        else:
+            st.warning("🔴 **Turno da Máquina...**", icon="🤖")
+            
+        st.info(st.session_state.get("ultimo_movimento_maquina", ""), icon="📢")
 
     nevoa_ativada = st.toggle("🌫️ Ocultar patentes inimigas", value=True)
 
-    # 1. Linha de Cabeçalho Superior (Números das Colunas: 1 a 10)
     header_cols = st.columns(11)
     with header_cols[0]:
-        st.write("") # Canto superior esquerdo vazio para alinhamento
+        st.write("")
     for c_idx in range(10):
         with header_cols[c_idx + 1]:
             st.markdown(f"<div style='text-align: center; font-weight: bold; color: #4a5568; font-size: 14px; margin-bottom: 5px;'>{c_idx + 1}</div>", unsafe_allow_html=True)
 
-    # 2. Renderização das Linhas do Tabuleiro com a Numeração Lateral (1 a 10)
     destino_maquina = st.session_state.get("ultimo_destino_maquina")
+
+    # Condição que desativa fisicamente os botões do tabuleiro se não for o turno do jogador
+    travar_botoes = (st.session_state.get("turno_atual") != "verde") or st.session_state.get("game_over")
 
     for row_idx in range(10):
         row_cols = st.columns(11)
         
-        # Número da linha na lateral esquerda alinhado com a altura dos botões (60px)
         with row_cols[0]:
             st.markdown(f"<div style='display: flex; align-items: center; justify-content: center; height: 60px; font-weight: bold; color: #4a5568; font-size: 14px;'>{row_idx + 1}</div>", unsafe_allow_html=True)
             
@@ -480,5 +495,6 @@ else:
                     on_click=handle_click,
                     args=(row_idx, col_idx), 
                     type=btn_type,
+                    disabled=travar_botoes,  # <--- BLOQUEIO FÍSICO APLICADO AQUI!
                     use_container_width=True 
                 )
