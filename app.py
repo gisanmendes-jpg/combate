@@ -4,7 +4,7 @@ import random
 st.set_page_config(layout="centered", page_title="Combate Tático", page_icon="⚔️")
 
 # ==========================================
-# ESTILIZAÇÃO VISUAL TÁTICA (CSS COM NOMES COMPLETOS)
+# ESTILIZAÇÃO VISUAL TÁTICA (CSS OTIMIZADO PARA NOMES COMPLETOS)
 # ==========================================
 st.markdown("""
     <style>
@@ -16,15 +16,16 @@ st.markdown("""
         [data-testid="stHorizontalBlock"] { gap: 0rem !important; }
         [data-testid="column"] { padding: 0 !important; }
         
-        /* Fonte ajustada para 11px permitindo exibir nomes completos sem quebrar linha */
+        /* Fonte compacta (8.5px) com letras justas para caber qualquer nome completo em uma linha */
         .stButton > button {
             width: 100% !important; height: 60px !important;
             border-radius: 4px !important; margin: 0px !important;
             padding: 0px !important; border: 1px solid #334155 !important;
-            font-size: 11px !important; /* Compacto o suficiente para nomes longos */
+            font-size: 8.5px !important; 
             font-weight: bold !important;
+            letter-spacing: -0.5px !important;
             background-color: #1e293b !important;
-            white-space: nowrap !important; /* Impede quebra de linha */
+            white-space: nowrap !important;
             overflow: hidden !important;
             transition: all 0.2s ease-in-out;
         }
