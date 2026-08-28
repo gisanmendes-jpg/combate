@@ -4,50 +4,58 @@ import random
 st.set_page_config(layout="centered", page_title="Combate Tático", page_icon="⚔️")
 
 # ==========================================
-# ESTILIZAÇÃO VISUAL TÁTICA (CONTRASTE CORRIGIDO)
+# ESTILIZAÇÃO VISUAL TÁTICA (TEMA SELVA / JOGO ORIGINAL)
 # ==========================================
 st.markdown("""
     <style>
+        /* Fundo geral: Verde muito escuro (quase preto/terroso) */
         .stApp {
-            background-color: #0f172a;
+            background-color: #0a0f0a;
             color: #f8fafc;
         }
         
         [data-testid="stHorizontalBlock"] { gap: 0rem !important; }
         [data-testid="column"] { padding: 0 !important; }
         
-        /* Ajuste do botão para comportar 2 linhas e FORÇAR COR CLARA */
+        /* Ajuste do botão: Gradiente verde-oliva (lembrando o terreno do tabuleiro) */
         .stButton > button {
             width: 100% !important; height: 65px !important;
             border-radius: 6px !important; margin: 0px !important;
-            padding: 2px !important; border: 1px solid #334155 !important;
-            background-color: #1e293b !important;
+            padding: 2px !important; 
+            border: 1px solid #182b12 !important;
+            background: linear-gradient(180deg, #26421c 0%, #12210d 100%) !important;
             transition: all 0.2s ease-in-out;
         }
         
-        /* Força o texto interno a ser branco/legível e quebrar linha */
+        /* Texto interno claro com leve sombra terrosa */
         .stButton > button p {
             font-size: 10.5px !important; 
             font-weight: bold !important;
             line-height: 1.3 !important;
             white-space: pre-wrap !important; 
             margin: 0 !important;
-            color: #f8fafc !important; /* TEXTO BRANCO */
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* Sombra para destacar */
+            color: #f1f5f1 !important; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.9); 
         }
         
-        /* Garante que botões bloqueados continuem legíveis */
+        /* Botões bloqueados: Verde-acinzentado escuro */
+        .stButton > button:disabled {
+            background: linear-gradient(180deg, #1a2b13 0%, #0b1208 100%) !important;
+            border-color: #0a0f0a !important;
+        }
         .stButton > button:disabled p {
-            color: #94a3b8 !important; /* TEXTO CINZA CLARO NO BLOQUEIO */
+            color: #8da38c !important; /* Texto levemente opaco para o bloqueio */
         }
 
+        /* Efeito Hover (passar o mouse) - Verde mais vivo */
         .stButton > button:hover {
-            border-color: #38bdf8 !important;
+            border-color: #4ade80 !important;
             transform: scale(1.02);
             z-index: 10;
         }
         .stButton { margin-bottom: -16px !important; }
 
+        /* Título com brilho verde tático */
         .main-title {
             text-align: center;
             font-family: 'Courier New', Courier, monospace;
@@ -56,9 +64,10 @@ st.markdown("""
             text-transform: uppercase;
             letter-spacing: 2px;
             margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.4);
         }
 
+        /* Cartas da Arena com tema Selva */
         .arena-container {
             display: flex;
             justify-content: center;
@@ -67,19 +76,19 @@ st.markdown("""
             margin: 40px 0;
         }
         .combat-card {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 3px solid #475569;
+            background: linear-gradient(135deg, #26421c 0%, #0a0f0a 100%);
+            border: 3px solid #3b612a;
             border-radius: 12px;
             padding: 30px 20px;
             width: 240px;
             text-align: center;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.7);
             font-family: 'Courier New', Courier, monospace;
         }
         .card-title {
             font-size: 13px;
             font-weight: bold;
-            color: #94a3b8;
+            color: #a3b8a2;
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 15px;
@@ -92,17 +101,17 @@ st.markdown("""
             white-space: pre-wrap;
         }
         .card-winner {
-            border-color: #22c55e !important;
-            background: linear-gradient(135deg, #052e16 0%, #1e293b 100%) !important;
+            border-color: #4ade80 !important;
+            background: linear-gradient(135deg, #14532d 0%, #064e3b 100%) !important;
             transform: scale(1.06);
-            box-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
+            box-shadow: 0 0 30px rgba(74, 222, 128, 0.3);
         }
         .card-loser {
             border-color: #ef4444 !important;
-            background: linear-gradient(135deg, #450a0a 0%, #1e293b 100%) !important;
+            background: linear-gradient(135deg, #450a0a 0%, #1c0606 100%) !important;
             opacity: 0.6;
             text-decoration: line-through;
-            filter: grayscale(30%);
+            filter: grayscale(20%);
         }
         .vs-text {
             font-size: 36px;
@@ -111,10 +120,11 @@ st.markdown("""
             text-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
         }
         
+        /* Barra de rolagem verde-militar */
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        ::-webkit-scrollbar-track { background: #0a0f0a; }
+        ::-webkit-scrollbar-thumb { background: #3b612a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4e8237; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -437,10 +447,10 @@ else:
 
     st.sidebar.subheader("📜 Relatório de Inteligência")
     if st.session_state.get("historico_combates"):
-        # FORÇA A COR BRANCA DENTRO DA DIV DO RELATÓRIO
-        html_log = "<div style='background-color: #1e293b; color: #f8fafc; padding: 12px; border-radius: 8px; max-height: 350px; overflow-y: auto; border: 1px solid #334155;'>"
+        # Fundo do relatório em tom esverdeado escuro
+        html_log = "<div style='background-color: #12210d; color: #f8fafc; padding: 12px; border-radius: 8px; max-height: 350px; overflow-y: auto; border: 1px solid #26421c;'>"
         for idx, evento in enumerate(st.session_state.historico_combates):
-            borda = "border-bottom: 1px solid #334155;" if idx < len(st.session_state.historico_combates)-1 else ""
+            borda = "border-bottom: 1px solid #26421c;" if idx < len(st.session_state.historico_combates)-1 else ""
             html_log += f"<div style='font-size: 12.5px; line-height: 1.5; padding-bottom: 10px; margin-bottom: 10px; {borda}'>{evento}</div>"
         html_log += "</div>"
         st.sidebar.markdown(html_log, unsafe_allow_html=True)
@@ -462,7 +472,7 @@ else:
     with header_cols[0]: st.write("")
     for c_idx in range(10):
         with header_cols[c_idx + 1]:
-            st.markdown(f"<div style='text-align: center; font-weight: bold; color: #94a3b8; font-size: 14px; margin-bottom: 5px;'>{c_idx + 1}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align: center; font-weight: bold; color: #8da38c; font-size: 14px; margin-bottom: 5px;'>{c_idx + 1}</div>", unsafe_allow_html=True)
 
     destino_maquina = st.session_state.get("ultimo_destino_maquina")
     travar_botoes = (st.session_state.get("turno_atual") != "verde") or st.session_state.get("game_over")
@@ -470,7 +480,7 @@ else:
     for row_idx in range(10):
         row_cols = st.columns(11)
         with row_cols[0]:
-            st.markdown(f"<div style='display: flex; align-items: center; justify-content: center; height: 65px; font-weight: bold; color: #94a3b8; font-size: 14px;'>{row_idx + 1}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='display: flex; align-items: center; justify-content: center; height: 65px; font-weight: bold; color: #8da38c; font-size: 14px;'>{row_idx + 1}</div>", unsafe_allow_html=True)
             
         for col_idx in range(10):
             with row_cols[col_idx + 1]:
