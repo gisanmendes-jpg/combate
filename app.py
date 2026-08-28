@@ -4,11 +4,10 @@ import random
 st.set_page_config(layout="centered", page_title="Combate Tático", page_icon="⚔️")
 
 # ==========================================
-# ESTILIZAÇÃO VISUAL TÁTICA (CSS AVANÇADO)
+# ESTILIZAÇÃO VISUAL TÁTICA (CSS CORRIGIDO)
 # ==========================================
 st.markdown("""
     <style>
-        /* Fundo geral e tipografia de comando */
         .stApp {
             background-color: #0f172a;
             color: #f8fafc;
@@ -17,13 +16,17 @@ st.markdown("""
         [data-testid="stHorizontalBlock"] { gap: 0rem !important; }
         [data-testid="column"] { padding: 0 !important; }
         
-        /* Estilização dos botões do tabuleiro (Grade tática) */
+        /* Correção do desnível: forçar texto em uma linha só e centralizar perfeitamente */
         .stButton > button {
             width: 100% !important; height: 60px !important;
             border-radius: 4px !important; margin: 0px !important;
             padding: 0px !important; border: 1px solid #334155 !important;
-            font-size: 22px !important;
+            font-size: 16px !important; /* Ajustado para caber patentes longas */
+            font-weight: bold !important;
             background-color: #1e293b !important;
+            white-space: nowrap !important; /* Evita quebra de linha (Prisioneiro) */
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
             transition: all 0.2s ease-in-out;
         }
         .stButton > button:hover {
@@ -33,7 +36,6 @@ st.markdown("""
         }
         .stButton { margin-bottom: -16px !important; }
 
-        /* Título Principal com Estilo Militar */
         .main-title {
             text-align: center;
             font-family: 'Courier New', Courier, monospace;
@@ -45,7 +47,6 @@ st.markdown("""
             text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
         }
 
-        /* Estilo visual das Cartas de Combate (Arena) */
         .arena-container {
             display: flex;
             justify-content: center;
@@ -113,9 +114,9 @@ def get_team(cell_content):
 
 def gerar_exercito(cor, emoji_cor):
     composicao = {
-        "Prisioneiro": 1, "Bomba": 6, "10-Marechal": 1, "9-General": 1,
-        "8-Coronel": 2, "7-Major": 3, "6-Capitao": 4, "5-Tenente": 4,
-        "4-Sargento": 4, "3-Cabo": 5, "2-Soldado": 8, "1-Espiao": 1
+        "Prisio.": 1, "Bomba": 6, "10-Mar.": 1, "9-Gen.": 1,
+        "8-Coron.": 2, "7-Major": 3, "6-Cap.": 4, "5-Ten.": 4,
+        "4-Sarg.": 4, "3-Cabo": 5, "2-Sold.": 8, "1-Esp.": 1
     }
     exercito = []
     for patente, quantidade in composicao.items():
@@ -130,24 +131,27 @@ def resolver_combate(atacante, defensor):
     nome_atk = atacante.split(" ", 1)[1]
     nome_def = defensor.split(" ", 1)[1]
     
-    if nome_def == "Prisioneiro": return "vitoria_jogo"
+    if "Prisio." in nome_def: return "vitoria_jogo"
     if nome_def == "Bomba":
         return "vitoria" if "3-Cabo" in nome_atk else "derrota"
     if nome_atk == nome_def: return "empate"
-    if "1-Espiao" in nome_atk and "10-Marechal" in nome_def: return "vitoria"
+    if "1-Esp." in nome_atk and "10-Mar." in nome_def: return "vitoria"
         
-    forca_atk = int(nome_atk.split("-")[0])
-    forca_def = int(nome_def.split("-")[0])
-    
-    return "vitoria" if forca_atk > forca_def else "derrota"
+    # Extração segura de força numérica para patentes abreviadas
+    try:
+        forca_atk = int(nome_atk.split("-")[0])
+        forca_def = int(nome_def.split("-")[0])
+        return "vitoria" if forca_atk > forca_def else "derrota"
+    except:
+        return "empate"
 
 def is_valid_move(orig_r, orig_c, target_r, target_c):
     if not (0 <= target_r < 10 and 0 <= target_c < 10): return False
         
     orig_cell = st.session_state.board[orig_r][orig_c]
-    if "Bomba" in orig_cell or "Prisioneiro" in orig_cell: return False
+    if "Bomba" in orig_cell or "Prisio." in orig_cell: return False
         
-    if "2-Soldado" in orig_cell:
+    if "2-Sold." in orig_cell:
         if orig_r != target_r and orig_c != target_c: return False
         step_r = 1 if target_r > orig_r else (-1 if target_r < orig_r else 0)
         step_c = 1 if target_c > orig_c else (-1 if target_c < orig_c else 0)
@@ -175,10 +179,10 @@ def avaliar_movimento(orig_r, orig_c, target_r, target_c):
         
     if peca_def != "⬜" and "🟩" in peca_def:
         score += 50
-        if "Prisioneiro" in peca_def:
+        if "Prisio." in peca_def:
             score += 1000
             
-    if "2-Soldado" in peca_atk:
+    if "2-Sold." in peca_atk:
         distancia = abs(orig_r - target_r) + abs(orig_c - target_c)
         if distancia > 1:
             score += (distancia * 3)
@@ -198,9 +202,9 @@ def jogada_da_maquina():
         for c in range(10):
             cell = st.session_state.board[r][c]
             
-            if "🟥" in cell and "Bomba" not in cell and "Prisioneiro" not in cell:
+            if "🟥" in cell and "Bomba" not in cell and "Prisio." not in cell:
                 direcoes = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-                alcance = 9 if "2-Soldado" in cell else 1
+                alcance = 9 if "2-Sold." in cell else 1
                 
                 for dr, dc in direcoes:
                     for passo in range(1, alcance + 1):
@@ -357,7 +361,6 @@ if st.session_state.get("turno_atual") == "vermelho" and not st.session_state.ge
 # ==========================================
 
 if st.session_state.get("fase_combate"):
-    # Efeito sonoro imersivo de alerta de combate via HTML5
     st.markdown("""
         <audio autoplay style="display:none;">
             <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
@@ -476,7 +479,7 @@ else:
         st.sidebar.info("Nenhum conflito reportado.")
 
     # ==========================================
-    # 8. INTERFACE DO TABULEIRO (ESTÉTICA DE COMANDO)
+    # 8. INTERFACE DO TABULEIRO
     # ==========================================
 
     if st.session_state.get("game_over"):
@@ -491,7 +494,6 @@ else:
 
     nevoa_ativada = st.toggle("🌫️ Ativar Névoa de Guerra (Ocultar Patentes Inimigas)", value=True)
 
-    # Grade com coordenadas numéricas
     header_cols = st.columns(11)
     with header_cols[0]:
         st.write("")
