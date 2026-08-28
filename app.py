@@ -4,7 +4,7 @@ import random
 st.set_page_config(layout="centered", page_title="Combate Tático", page_icon="⚔️")
 
 # ==========================================
-# ESTILIZAÇÃO VISUAL TÁTICA
+# ESTILIZAÇÃO VISUAL TÁTICA (CONTRASTE CORRIGIDO)
 # ==========================================
 st.markdown("""
     <style>
@@ -16,7 +16,7 @@ st.markdown("""
         [data-testid="stHorizontalBlock"] { gap: 0rem !important; }
         [data-testid="column"] { padding: 0 !important; }
         
-        /* Ajuste do botão para comportar 2 linhas (Ícone em cima, Texto embaixo) */
+        /* Ajuste do botão para comportar 2 linhas e FORÇAR COR CLARA */
         .stButton > button {
             width: 100% !important; height: 65px !important;
             border-radius: 6px !important; margin: 0px !important;
@@ -25,13 +25,20 @@ st.markdown("""
             transition: all 0.2s ease-in-out;
         }
         
-        /* Força o texto interno a quebrar a linha no \n */
+        /* Força o texto interno a ser branco/legível e quebrar linha */
         .stButton > button p {
             font-size: 10.5px !important; 
             font-weight: bold !important;
             line-height: 1.3 !important;
             white-space: pre-wrap !important; 
             margin: 0 !important;
+            color: #f8fafc !important; /* TEXTO BRANCO */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* Sombra para destacar */
+        }
+        
+        /* Garante que botões bloqueados continuem legíveis */
+        .stButton > button:disabled p {
+            color: #94a3b8 !important; /* TEXTO CINZA CLARO NO BLOQUEIO */
         }
 
         .stButton > button:hover {
@@ -104,7 +111,6 @@ st.markdown("""
             text-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
         }
         
-        /* Barra de rolagem personalizada para o Relatório */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
@@ -375,7 +381,6 @@ if st.session_state.get("fase_combate"):
             orig_r, orig_c = dados["orig"]
             target_r, target_c = dados["target"]
             
-            # --- FORMATAÇÃO DETALHADA PARA O RELATÓRIO ---
             if quem_iniciou == "jogador":
                 txt_atk = f"<span style='color:#4ade80; font-weight:bold;'>Seu {nome_atk}</span>"
                 txt_def = f"<span style='color:#f87171; font-weight:bold;'>{nome_def} inimigo</span>"
@@ -430,11 +435,10 @@ else:
     st.sidebar.markdown(f"* 🟥 Forças Inimigas: **{vivas_vermelhas} / 40***")
     st.sidebar.divider()
 
-    # --- NOVO RELATÓRIO DE INTELIGÊNCIA (SCROLLÁVEL E COMPLETO) ---
     st.sidebar.subheader("📜 Relatório de Inteligência")
     if st.session_state.get("historico_combates"):
-        # Cria uma div HTML rolável que guarda todo o histórico sem cortar a tela
-        html_log = "<div style='background-color: #1e293b; padding: 12px; border-radius: 8px; max-height: 350px; overflow-y: auto; border: 1px solid #334155;'>"
+        # FORÇA A COR BRANCA DENTRO DA DIV DO RELATÓRIO
+        html_log = "<div style='background-color: #1e293b; color: #f8fafc; padding: 12px; border-radius: 8px; max-height: 350px; overflow-y: auto; border: 1px solid #334155;'>"
         for idx, evento in enumerate(st.session_state.historico_combates):
             borda = "border-bottom: 1px solid #334155;" if idx < len(st.session_state.historico_combates)-1 else ""
             html_log += f"<div style='font-size: 12.5px; line-height: 1.5; padding-bottom: 10px; margin-bottom: 10px; {borda}'>{evento}</div>"
