@@ -1,20 +1,51 @@
 import streamlit as st
 import random
 
-st.set_page_config(layout="centered")
+st.set_page_config(layout="centered", page_title="Combate Tático", page_icon="⚔️")
+
+# ==========================================
+# ESTILIZAÇÃO VISUAL TÁTICA (CSS AVANÇADO)
+# ==========================================
 st.markdown("""
     <style>
+        /* Fundo geral e tipografia de comando */
+        .stApp {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        
         [data-testid="stHorizontalBlock"] { gap: 0rem !important; }
         [data-testid="column"] { padding: 0 !important; }
+        
+        /* Estilização dos botões do tabuleiro (Grade tática) */
         .stButton > button {
             width: 100% !important; height: 60px !important;
-            border-radius: 0px !important; margin: 0px !important;
-            padding: 0px !important; border: 1px solid #d3d3d3 !important;
-            font-size: 24px !important;
+            border-radius: 4px !important; margin: 0px !important;
+            padding: 0px !important; border: 1px solid #334155 !important;
+            font-size: 22px !important;
+            background-color: #1e293b !important;
+            transition: all 0.2s ease-in-out;
+        }
+        .stButton > button:hover {
+            border-color: #38bdf8 !important;
+            transform: scale(1.02);
+            z-index: 10;
         }
         .stButton { margin-bottom: -16px !important; }
 
-        /* Estilo visual das Cartas de Combate */
+        /* Título Principal com Estilo Militar */
+        .main-title {
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 900;
+            color: #f1f5f9;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+
+        /* Estilo visual das Cartas de Combate (Arena) */
         .arena-container {
             display: flex;
             justify-content: center;
@@ -23,51 +54,52 @@ st.markdown("""
             margin: 40px 0;
         }
         .combat-card {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border: 3px solid #4a5568;
-            border-radius: 15px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 3px solid #475569;
+            border-radius: 12px;
             padding: 30px 20px;
-            width: 220px;
+            width: 240px;
             text-align: center;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            font-family: sans-serif;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+            font-family: 'Courier New', Courier, monospace;
         }
         .card-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
-            color: #4a5568;
+            color: #94a3b8;
             text-transform: uppercase;
-            margin-bottom: 10px;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
         }
         .card-body {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: bold;
-            color: #1a202c;
+            color: #f8fafc;
             margin: 15px 0;
         }
         .card-winner {
-            border-color: #48bb78 !important;
-            background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%) !important;
-            transform: scale(1.05);
-            box-shadow: 0 0 25px rgba(72, 187, 120, 0.6);
+            border-color: #22c55e !important;
+            background: linear-gradient(135deg, #052e16 0%, #1e293b 100%) !important;
+            transform: scale(1.06);
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
         }
         .card-loser {
-            border-color: #f56565 !important;
-            background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%) !important;
-            opacity: 0.5;
+            border-color: #ef4444 !important;
+            background: linear-gradient(135deg, #450a0a 0%, #1e293b 100%) !important;
+            opacity: 0.6;
             text-decoration: line-through;
-            filter: grayscale(40%);
+            filter: grayscale(30%);
         }
         .vs-text {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 900;
-            color: #e53e3e;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            color: #ef4444;
+            text-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
         }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("⚔️ Combate - Jogador vs Máquina")
+st.markdown("<h1 class='main-title'>⚔️ Centro de Comando: Combate Tático</h1>", unsafe_allow_html=True)
 
 # ==========================================
 # 1. FUNÇÕES DO JOGO
@@ -212,7 +244,7 @@ def jogada_da_maquina():
     if peca_def == "⬜":
         st.session_state.board[target_r][target_c] = peca_atk
         st.session_state.board[orig_r][orig_c] = "⬜"
-        st.session_state.ultimo_movimento_maquina = f"🤖 A Máquina avançou de {orig_coord} para {target_coord}."
+        st.session_state.ultimo_movimento_maquina = f"🤖 Inimigo avançou de {orig_coord} para {target_coord}."
         st.session_state.turno_atual = "verde"
     else:
         resultado = resolver_combate(peca_atk, peca_def)
@@ -225,7 +257,7 @@ def jogada_da_maquina():
             "quem_iniciou": "maquina"
         }
         st.session_state.fase_combate = True
-        st.session_state.ultimo_movimento_maquina = f"⚔️ A Máquina atacou sua peça em {target_coord}!"
+        st.session_state.ultimo_movimento_maquina = f"⚔️ Inimigo atacou em {target_coord}!"
 
 # ==========================================
 # 3. CONTROLE DE CLIQUES DO JOGADOR
@@ -260,7 +292,7 @@ def handle_click(row, col):
                 if peca_def == "⬜":
                     st.session_state.board[row][col] = peca_atk
                     st.session_state.board[orig_r][orig_c] = "⬜" 
-                    st.session_state.ultimo_movimento_maquina = f"Sua última jogada: moveu de {orig_coord} para {target_coord}."
+                    st.session_state.ultimo_movimento_maquina = f"Sua jogada: moveu de {orig_coord} para {target_coord}."
                     st.session_state.turno_atual = "vermelho"
                 else:
                     resultado = resolver_combate(peca_atk, peca_def)
@@ -310,7 +342,7 @@ if "board" not in st.session_state:
     st.session_state.dados_combate = None
     st.session_state.ultima_origem_maquina = None
     st.session_state.ultimo_destino_maquina = None
-    st.session_state.ultimo_movimento_maquina = "Partida iniciada. Sua vez de jogar!"
+    st.session_state.ultimo_movimento_maquina = "Área segura. Aguardando ordens de marcha."
 
 # ==========================================
 # 5. GATILHO AUTOMÁTICO DA MÁQUINA
@@ -321,12 +353,19 @@ if st.session_state.get("turno_atual") == "vermelho" and not st.session_state.ge
     st.rerun()
 
 # ==========================================
-# 6. TELA DE COMBATE CINEMATOGRÁFICA (CARTAS)
+# 6. TELA DE COMBATE CINEMATOGRÁFICA (CARTAS COM ÁUDIO)
 # ==========================================
 
 if st.session_state.get("fase_combate"):
+    # Efeito sonoro imersivo de alerta de combate via HTML5
+    st.markdown("""
+        <audio autoplay style="display:none;">
+            <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
+        </audio>
+    """, unsafe_allow_html=True)
+
     st.markdown("---")
-    st.markdown("<h2 style='text-align: center;'>⚔️ CONFRONTO NA ARENA ⚔️</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #f8fafc; font-family: Courier New;'>⚡ CONFRONTO IMINENTE NA ARENA ⚡</h2>", unsafe_allow_html=True)
     
     dados = st.session_state.dados_combate
     atk = dados["atacante"]
@@ -340,61 +379,61 @@ if st.session_state.get("fase_combate"):
     if res == "vitoria":
         class_atk += " card-winner"
         class_def += " card-loser"
-        status_msg = f"🏆 O **{atk}** venceu o confronto e eliminou o inimigo!"
+        status_msg = f"🏆 Vitória da tropa **{atk}** sobre o alvo inimigo!"
     elif res == "derrota":
         class_atk += " card-loser"
         class_def += " card-winner"
-        status_msg = f"💀 O **{atk}** foi destruído pela defesa inimiga!"
+        status_msg = f"💀 A tropa **{atk}** foi interceptada e neutralizada!"
     elif res == "empate":
         class_atk += " card-loser"
         class_def += " card-loser"
-        status_msg = f"🤝 Empate total! Ambas as peças se destruíram mutuamente."
+        status_msg = f"🤝 Conflito anulado! Ambas as unidades destruídas no impacto."
     elif res == "vitoria_jogo":
         class_atk += " card-winner"
         class_def += " card-loser"
-        status_msg = f"🎉 **PRISIONEIRO CAPTURADO!**"
+        status_msg = f"🎉 **ALVO ESTRATÉGICO CAPTURADO COM SUCESSO!**"
 
     st.markdown(f"""
         <div class="arena-container">
             <div class="{class_atk}">
-                <div class="card-title">Atacante</div>
+                <div class="card-title">Unidade Ofensiva</div>
                 <div class="card-body">{atk}</div>
             </div>
-            <div class="vs-text">X</div>
+            <div class="vs-text">VS</div>
             <div class="{class_def}">
-                <div class="card-title">Defensor</div>
+                <div class="card-title">Unidade Defensiva</div>
                 <div class="card-body">{def_}</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
     
-    st.markdown(f"<h3 style='text-align: center; color: #2d3748;'>{status_msg}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='text-align: center; color: #cbd5e1; font-size: 18px;'>{status_msg}</h3>", unsafe_allow_html=True)
     st.markdown("---")
     
     col_centro = st.columns([1, 2, 1])
     with col_centro[1]:
-        if st.button("🎯 Continuar para o Tabuleiro", use_container_width=True):
+        if st.button("🎯 Retornar ao Centro de Comando", use_container_width=True):
             orig_r, orig_c = dados["orig"]
             target_r, target_c = dados["target"]
             
             if res == "vitoria":
                 st.session_state.board[target_r][target_c] = atk
                 st.session_state.board[orig_r][orig_c] = "⬜"
-                st.session_state.historico_combates.insert(0, f"⚔️ {atk} derrotou {def_}")
+                st.session_state.historico_combates.insert(0, f"⚔️ {atk} eliminou o inimigo em ({target_r+1},{target_c+1})")
             elif res == "derrota":
                 st.session_state.board[orig_r][orig_c] = "⬜"
-                st.session_state.historico_combates.insert(0, f"💥 {atk} foi destruído por {def_}")
+                st.session_state.historico_combates.insert(0, f"💥 {atk} foi destruído em combate")
             elif res == "empate":
                 st.session_state.board[target_r][target_c] = "⬜"
                 st.session_state.board[orig_r][orig_c] = "⬜"
-                st.session_state.historico_combates.insert(0, f"🤝 Empate entre {atk} e {def_}")
+                st.session_state.historico_combates.insert(0, f"🤝 Perda mútua de unidades")
             elif res == "vitoria_jogo":
                 st.session_state.board[target_r][target_c] = atk
                 st.session_state.board[orig_r][orig_c] = "⬜"
                 st.session_state.game_over = True
                 venc = "Verde (Você)" if "🟩" in atk else "Vermelho (Máquina)"
                 st.session_state.vencedor = venc
-                st.session_state.historico_combates.insert(0, f"🏆 Prisioneiro capturado!")
+                st.session_state.historico_combates.insert(0, f"🏆 Missão cumprida: Prisioneiro asegurado!")
             
             st.session_state.fase_combate = False
             st.session_state.dados_combate = None
@@ -403,13 +442,13 @@ if st.session_state.get("fase_combate"):
             st.rerun()
 
 # ==========================================
-# 7. BARRA LATERAL (SIDEBAR) - PAINEL DE CONTROLE
+# 7. BARRA LATERAL (SIDEBAR) - PAINEL TÁTICO
 # ==========================================
 
 else:
-    st.sidebar.title("📊 Painel de Controle")
+    st.sidebar.title("📡 Painel Tático")
 
-    if st.sidebar.button("🔄 Reiniciar Partida"):
+    if st.sidebar.button("🔄 Reiniciar Operação"):
         st.session_state.clear()
         st.rerun()
 
@@ -423,52 +462,51 @@ else:
             if "🟩" in celula: vivas_verdes += 1
             elif "🟥" in celula: vivas_vermelhas += 1
 
-    st.sidebar.subheader("🛡️ Status dos Exércitos")
-    st.sidebar.markdown(f"* 🟩 Suas Peças Vivas: **{vivas_verdes} / 40***")
-    st.sidebar.markdown(f"* 🟥 Peças Inimigas: **{vivas_vermelhas} / 40***")
+    st.sidebar.subheader("🛡️ Status das Tropas")
+    st.sidebar.markdown(f"* 🟩 Suas Forças: **{vivas_verdes} / 40***")
+    st.sidebar.markdown(f"* 🟥 Forças Inimigas: **{vivas_vermelhas} / 40***")
 
     st.sidebar.divider()
 
-    st.sidebar.subheader("📜 Diário de Guerra")
+    st.sidebar.subheader("📜 Relatório de Inteligência")
     if st.session_state.get("historico_combates"):
         for evento in st.session_state.historico_combates[:6]:
             st.sidebar.markdown(f"- {evento}")
     else:
-        st.sidebar.info("Ainda não ocorreram combates.")
+        st.sidebar.info("Nenhum conflito reportado.")
 
     # ==========================================
-    # 8. INTERFACE DO TABULEIRO (COM BOTÕES BLOQUEADOS NO TURNO DA MÁQUINA)
+    # 8. INTERFACE DO TABULEIRO (ESTÉTICA DE COMANDO)
     # ==========================================
 
     if st.session_state.get("game_over"):
-        st.success(f"🎉 JOGO ENCERRADO! A vitória é do exército {st.session_state.vencedor}!", icon="🏆")
+        st.success(f"🎉 OPERAÇÃO CONCLUÍDA! Vitória do exército {st.session_state.vencedor}!", icon="🏆")
     else:
         if st.session_state.get("turno_atual") == "verde":
-            st.success("🟢 **Sua vez de jogar!** Selecione sua peça e clique no destino.", icon="👉")
+            st.success("🟢 **Status: Turno do Jogador.** Selecione a unidade e ordene o avanço.", icon="🎯")
         else:
-            st.warning("🔴 **Turno da Máquina...**", icon="🤖")
+            st.warning("🔴 **Status: Inteligência Inimiga Agindo...**", icon="🛰️")
             
         st.info(st.session_state.get("ultimo_movimento_maquina", ""), icon="📢")
 
-    nevoa_ativada = st.toggle("🌫️ Ocultar patentes inimigas", value=True)
+    nevoa_ativada = st.toggle("🌫️ Ativar Névoa de Guerra (Ocultar Patentes Inimigas)", value=True)
 
+    # Grade com coordenadas numéricas
     header_cols = st.columns(11)
     with header_cols[0]:
         st.write("")
     for c_idx in range(10):
         with header_cols[c_idx + 1]:
-            st.markdown(f"<div style='text-align: center; font-weight: bold; color: #4a5568; font-size: 14px; margin-bottom: 5px;'>{c_idx + 1}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align: center; font-weight: bold; color: #94a3b8; font-size: 14px; margin-bottom: 5px;'>{c_idx + 1}</div>", unsafe_allow_html=True)
 
     destino_maquina = st.session_state.get("ultimo_destino_maquina")
-
-    # Condição que desativa fisicamente os botões do tabuleiro se não for o turno do jogador
     travar_botoes = (st.session_state.get("turno_atual") != "verde") or st.session_state.get("game_over")
 
     for row_idx in range(10):
         row_cols = st.columns(11)
         
         with row_cols[0]:
-            st.markdown(f"<div style='display: flex; align-items: center; justify-content: center; height: 60px; font-weight: bold; color: #4a5568; font-size: 14px;'>{row_idx + 1}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='display: flex; align-items: center; justify-content: center; height: 60px; font-weight: bold; color: #94a3b8; font-size: 14px;'>{row_idx + 1}</div>", unsafe_allow_html=True)
             
         for col_idx in range(10):
             with row_cols[col_idx + 1]:
@@ -495,6 +533,6 @@ else:
                     on_click=handle_click,
                     args=(row_idx, col_idx), 
                     type=btn_type,
-                    disabled=travar_botoes,  # <--- BLOQUEIO FÍSICO APLICADO AQUI!
+                    disabled=travar_botoes,
                     use_container_width=True 
                 )
